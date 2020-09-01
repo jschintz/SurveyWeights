@@ -1,0 +1,246 @@
+//	Step 1 Enter required variables
+//	Change required parameters unique to each project deployment
+
+
+//	System Inputs
+	//	Execute without need to click more
+	set more off
+
+	//	Close any currently open log file
+	capture log close
+
+	//	Location of analysis input and outputs
+	cd "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201609-Digital CU finhealth segmentation\4. Data & Analysis\Scripts and Outputs\"
+	
+	//	Create a log of executable
+	log using Outputs\Log_Step1.txt, text replace
+	
+//	Survey Instrument Inputs
+	//	Import Method of Survey Data File
+		local Survey_DataFile import excel "Input Data Files\1.23 DCU SurveyPull_QA Check.xls", sheet("Sheet1") firstrow
+		
+	//	Define variables
+		//Define the UniqueID
+			local ID 	UniqueIDofCustomer
+		//Define the questions driving the typing tool segmentation
+			//Q1 	When you think about saving money for the future, which of these time frames is most important to you?
+			local Q1 	Whenyouthinkaboutsavingmone
+			//Q2 	Which of the following statements comes closest to describing your savings habits?
+			local Q2 	Whichofthefollowingstatement
+			//Q3	Does your household plan ahead to make sure you have the money to pay for large irregular expenses (for example, bills not due each month, such as insurance, property taxes, car registration, etc.)? 
+			local Q3 	Doesyourhouseholdplanaheadt
+			//Q4	How much do you agree or disagree with the following statements? - I always find myself living paycheck to paycheck 
+			local Q4 	Onascalefrom1to5where1
+			//Q5	How much do you agree or disagree with the following statements? - I am highly satisfied with my present financial condition 		
+			local Q5 	V
+			//Q6	Which one of the following statements best describes how well your household is keeping up with your bills and credit payments at the moment? 
+			local Q6 	Whichoneofthefollowingstate
+			//Q7	In the past 12 months, how often has your household run out of money before the end of the month, including when you had to use credit to get by? 		
+			local Q7 	Inthepast12monthshowoften
+			//Q8	How confident are you that you could come up with $2,000 if an unexpected need arose within the next month? 
+			local Q8 	Howconfidentareyouthatyouc
+			//Q9	How long could your household make ends meet if you faced unemployment, a longer-term illness, job loss, economic downturn, or other emergency that caused a drop in income? 		
+			local Q9 	Howlongcouldyourhouseholdma
+			//Q10	Using a scale of 1 to 5 where 1 is “Very Poor” and 5 is “Excellent”, where do you think your credit score falls? 		
+			local Q10 	Yourcreditscoreisanumberth
+			//Q11	Do you have monthly loan or debt payments for any of the following? 		
+			local Q11 	Doyouhavemonthlyloanordebt
+			//Q12	Please provide your best estimate of the total dollar amount when you add up your monthly payments on the items listed below 		
+			local Q12 	Pleaseprovideyourbestestimat
+			//Q13 	Do you have a mortgage or rent payment?		
+			local Q13 	Doyouhaveamortgageorrentp
+			//Q14	Please provide your best estimate of your monthly mortgage or rent payment?		
+			local Q14 	AE
+			//Q15 	Lastly, what is your total household income before taxes for the past 12 months? 		
+			local Q15 	Lastlywhatisyourtotalhouse
+	
+				// Define labels for TT segmentation question
+			label define Q1 1 "Next few weeks" 2 "Next few months" 3 "Next year" 4 "Next few years" 5 "Next 5-10 years" 6 "Longer than 10 years" 7 "None of the above"
+			label define Q2 1 "Don't save - usually spend more than income" 2 "Don't save - usually spend about as much as income" 3 "Save whatever is left over at the end of the month - no regular plan" ///
+							4 "Save income of one family member, spend the other" 5 "Spend regular income, save other income (Regular income include wages, salaries, pensions and other income you receive on a regular ongoing basis (e.g. rent, if you rent out a house or apartment). Other income includes bonuses, gift money, occasional investment income, tax refunds, etc)" ///
+							6 "Save regularly by putting money aside each month"
+			label define Q3 1 "Yes, my household plans ahead for large expenses" 2 "No, my household doesn't plan ahead for large expenses" 3 "We would plan ahead if we could" ///
+							4 "We do not need to plan ahead because there is always enough money in the bank account to pay for large expenses" 5 "Other" 6 "Don't know"
+			label define Q4 1 "1 - Strongly disagree" 2 "2" 3 "3 - Neither agree nor disagree" 4 "4" 5 "5 - Strongly agree"
+			label define Q5 1 "1 - Strongly disagree" 2 "2" 3 "3 - Neither agree nor disagree" 4 "4" 5 "5 - Strongly agree"
+			label define Q6 1 "Keeping up with all bills and payments without any difficulties" 2 "Keeping up with all bills and payments, but it is a struggle from time to time" ///
+							3 "Keeping up with all bills and payments, but it is a constant struggle" 4 "Falling behind with some bills or credit payments" 5 "Falling behind with many bills or credit payments" 6 "Don't know" ///
+							7 "Don't have any bills or credit payments"
+			label define Q7 1 "Never" 2 "Only a few months" 3 "Some months" 4 "Most months" 5 "Every month" 6 "Don't know"
+			label define Q8 1 "Not at all confident" 2 "Only slightly confident" 3 "Somewhat confident" 4 "Very confident"
+			label define Q9 1 "Less than or equal to one week" 2 "More than one week but less than or equal to one month" 3 "More than one month but less than or equal to three months" ///
+							4 "More than three months but less than or equal to six months" 5 "More than six months but less than or equal to twelve months" 6 "More than twelve months" 7 "Don't know"
+			label define Q10 1 "1 - Very Poor" 2 "2 - Poor" 3 "3 - Fair" 4 "4 - Good" 5 "5 - Excellent" 6 "Don't know" 7 "Didn't know I had a score"
+			label define Q11 1 "Yes" 2 "No" 3 "Don't know"
+			//Q12 Numeric, No label
+			label define Q13 1 "Yes" 2 "No" 3 "Don't know"
+			//Q14 Numeric, No label
+			label define Q15 2500 "$4,999 or less" 6250 "$5,000 - $ 7,499" 8750 "$7,500 - $ 9,999" 11250 "$10,000 - $ 12,499" 13750 "$12,500 - $ 14,999" 17500  "$15,000 - $ 19,999" 22500 "$20,000 - $ 24,999" 27500 "$25,000 - $ 29,999" ///
+							32500 "$30,000 - $ 34,999" 	 37500  "$35,000 - $ 39,999" 45000  "$40,000 - $ 49,999" 55000  "$50,000 - $ 59,999" 67500 "$60,000 - $ 74,999" 80000 "$75,000 - $ 84,999" 92500 "$85,000 - $ 99,999" ///
+							112500  "$100,000 - $ 124,999" 137500  "$125,000 - $ 149,999"  162500  "$150,000 - $ 174,999" 251707  "$175,000 - and up" 
+							//For Q15 Instead of codes uses numeric values for midway point of range.  Reused in DSFO
+			label define QIncomeGroup 1 "<$30K" 2 "$30K - $60K" 3 "$60K - $100K" 4 "$100K+"
+			
+		//Rename custome variables
+		/*
+		local renamecustom_1 "rename Whatareyourhouseholdsmosts TTSurvey_C_Barr1"
+		local renamecustom_2 "rename N TTSurvey_C_Barr2"
+		local renamecustom_3 "rename O TTSurvey_C_Barr3"
+		local renamecustom_4 "rename P TTSurvey_C_Barr4"
+		local renamecustom_5 "rename Q TTSurvey_C_Barr5"
+		local renamecustom_6 "rename R TTSurvey_C_Barr6"
+		local renamecustom_7 "rename S TTSurvey_C_Barr7"
+		local renamecustom_8 "rename T TTSurvey_C_Barr8"
+		local renamecustom_9 "rename U TTSurvey_C_Barr9"
+		*/
+		//All macros listed above must be rested below
+		local renamecustom_all "renamecustom_1 renamecustom_2 renamecustom_3 renamecustom_4 renamecustom_5 renamecustom_6 renamecustom_7 renamecustom_8 renamecustom_9"
+		
+//	----------------------------------------------------------
+//	Step 2 Imports and standardizes typing tool data
+	//TT Survey Data
+		`Survey_DataFile'
+		
+		drop if UniqueIDofCustomer=="Open-Ended Response"	
+		//Rename Unique ID
+		rename `ID'		UniqueIDResp 
+		//Rename TT survey questions for standardisation purposes	
+		rename `Q1' 	Temp_Q1
+		rename `Q2' 	Temp_Q2
+		rename `Q3' 	Temp_Q3
+		rename `Q4' 	Temp_Q4
+		rename `Q5' 	Temp_Q5
+		rename `Q6' 	Temp_Q6
+		rename `Q7' 	Temp_Q7
+		rename `Q8' 	Temp_Q8
+		rename `Q9' 	Temp_Q9
+		rename `Q10' 	Temp_Q10
+		rename `Q11' 	Temp_Q11
+		rename `Q12' 	Temp_Q12
+		rename `Q13' 	Temp_Q13
+		rename `Q14' 	Temp_Q14
+		rename `Q15' 	Temp_Q15
+		
+		//Rename Custom Variables	Executes all commands contained within macros that were included in renamecustom_all
+		foreach custom in `renamecustom_all' {
+										``custom''
+												}	
+	
+		// Create variables with ordered responses
+		encode Temp_Q1, generate(Q1) label(Q1) noextend
+		encode Temp_Q2, generate(Q2) label(Q2) noextend
+		encode Temp_Q3, generate(Q3) label(Q3) noextend
+		encode Temp_Q4, generate(Q4) label(Q4) noextend
+		encode Temp_Q5, generate(Q5) label(Q5) noextend
+		encode Temp_Q6, generate(Q6) label(Q6) noextend
+		encode Temp_Q7, generate(Q7) label(Q7) noextend
+		encode Temp_Q8, generate(Q8) label(Q8) noextend
+		encode Temp_Q9, generate(Q9) label(Q9) noextend
+		encode Temp_Q10, generate(Q10) label(Q10) noextend
+		encode Temp_Q11, generate(Q11) label(Q11) noextend
+		encode Temp_Q12, generate(Q12)
+		encode Temp_Q13, generate(Q13) label(Q13) noextend
+		encode Temp_Q14, generate(Q14)
+		encode Temp_Q15, generate(Q15) label(Q15) noextend
+		
+		//Create custom variable grouping income
+		gen QIncomeGroup=.
+			replace QIncomeGroup = 4 if Q15 >=100000
+			replace QIncomeGroup = 3 if Q15 <100000
+			replace QIncomeGroup = 2 if Q15 <60000
+			replace QIncomeGroup = 1 if Q15 <30000
+		label values QIncomeGroup QIncomeGroup
+		label variable QIncomeGroup "Household Income Group"
+		
+		//Create custom variable grouping planned savings habits
+		gen Q2Group=.
+			replace Q2Group = 4 if Q2 ==1
+			replace Q2Group = 3 if Q2 ==2
+			replace Q2Group = 2 if Q2 ==3
+			replace Q2Group = 1 if Q2 ==4
+			replace Q2Group = 1 if Q2 ==5
+			replace Q2Group = 1 if Q2 ==6
+		label define Q2Group 1 "Planned Saving" 2 "Unplanned Saving" 3 "Don’t Save; spending = income" 4 "Don’t Save; spending > income"
+		label values Q2Group Q2Group
+		
+		//Create custom variable grouping savings time horizon
+		gen Q1Group=.
+		replace Q1Group = 1 if Q1 ==6
+		replace Q1Group = 2 if Q1 ==5
+		replace Q1Group = 3 if Q1 ==4
+		replace Q1Group = 3 if Q1 ==3
+		replace Q1Group = 4 if Q1 ==2
+		replace Q1Group = 4 if Q1 ==1
+		replace Q1Group = 5 if Q1 ==7
+		label define Q1Group 1 "Longer than 10 years" 2 "Next 5-10 years" 3 "Next year or next few years" 4 "Next few weeks or months" 5 "None of the above"
+		label values Q1Group Q1Group	
+		
+		//create custom variable grouping I always find myself living paycheck to paycheck 
+		gen Q4Group=.
+		replace Q4Group = 1 if Q4 ==1
+		replace Q4Group = 1 if Q4 ==2
+		replace Q4Group = 2 if Q4 ==3
+		replace Q4Group = 3 if Q4 ==4
+		replace Q4Group = 3 if Q4 ==5
+		label define Q4Group 1 "Stongly disageree / Disagree" 2 "Neither agree nor disagree" 3 "Agree / Stongly Agree" 
+		label values Q4Group Q4Group
+		
+		//create custom variable grouping I am highly satisfied with my present financial condition 		
+		gen Q5Group=.
+		replace Q5Group = 1 if Q5 ==1
+		replace Q5Group = 1 if Q5 ==2
+		replace Q5Group = 2 if Q5 ==3
+		replace Q5Group = 3 if Q5 ==4
+		replace Q5Group = 3 if Q5 ==5
+		label define Q5Group 1 "Stongly disageree / Disagree" 2 "Neither agree nor disagree" 3 "Agree / Stongly Agree" 
+		label values Q5Group Q5Group
+		
+		//create custom variable grouping making ends meet
+		gen Q9Group=.
+		replace Q9Group = 1 if Q9 ==1
+		replace Q9Group = 1 if Q9 ==2
+		replace Q9Group = 1 if Q9 ==3
+		replace Q9Group = 2 if Q9 ==4
+		replace Q9Group = 2 if Q9 ==5
+		replace Q9Group = 3 if Q9 ==6
+		replace Q9Group = 4 if Q9 ==7
+		label define Q9Group 1 "<= 3 months" 2 "> 3 months and <= 12 months" 3 "> 12 months" ///
+							4 "Don't know"
+		label values Q9Group Q9Group
+		
+		//Add Prefix
+			//Typing Tool Segment Questions
+				//Group the questions driving the typing tool segmentation
+				local Survey_TypingQuestions Q*
+				foreach var in `Survey_TypingQuestions'{
+				rename `var' TTSurvey_Q_`var' 
+				} 
+
+				
+		//Remove any unused fields
+		keep TTSurvey_* UniqueIDResp
+			
+		//Run report for null values
+		mdesc
+		
+		//Drop null values
+		drop if TTSurvey_Q_Q1==.
+		drop if TTSurvey_Q_Q2==.
+		drop if TTSurvey_Q_Q3==.
+		drop if TTSurvey_Q_Q4==.
+		drop if TTSurvey_Q_Q5==.
+		drop if TTSurvey_Q_Q6==.
+		drop if TTSurvey_Q_Q7==.
+		drop if TTSurvey_Q_Q8==.
+		drop if TTSurvey_Q_Q9==.
+		drop if TTSurvey_Q_Q10==.
+		drop if TTSurvey_Q_Q11==.
+		drop if TTSurvey_Q_Q13==.
+		drop if TTSurvey_Q_Q15==.
+		drop if UniqueIDResp==""
+		
+		//Run report for null values after predefined criterias are dropped
+		mdesc
+		
+		//Save file
+		save "Outputs\Step1.dta",replace	

@@ -1,0 +1,107 @@
+//	Step 1 Enter required variables
+//	Change required parameters unique to each project deployment
+
+
+//	System Inputs
+	//	Execute without need to click more
+	set more off
+
+	//	Close any currently open log file
+	capture log close
+
+	//	Location of analysis input and outputs
+	cd "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201608 - Patelco Finhealth Segmentation\4. Data & Analysis\Scripts and Outputs"
+	
+	//	Create a log of executable
+	log using Outputs\Log_Step4.txt, text replace
+
+	//define which variables need to be used from benchmark file when constructing weights.  Currently only two "groups" have been defined, product and demographics
+	//local variables demo_age demo_county demo_gender demo_incomegroup demo_marital product_CC product_autoloan product_checking product_consumerloan product_indirect product_loggedin product_mortgage product_nonmortgageCCLoan product_retirement product_savings
+	local product product_CC product_checking product_indirect product_loggedin product_mortgage product_nonmortgageCCLoan product_retirement product_savings
+	local demographics demo_age demo_county demo_gender demo_incomegroup
+	local variables `product' `demographics' 
+	
+	//Define survey weight to be used for final results to client, at the end of analysis of survey weights
+	local finalweight rakedwgt4
+	//refernce ipfraking document for guidance on construction of survey weights.  http://www.stata-journal.com/sjpdf.html?articlenum=st0323
+	
+//---------------------------------------------------------------------------	
+//Step 2  Create custom weights
+
+//Import benchmark file
+local benchmarkdataload "use "Outputs\Step3.dta", clear"
+//Import Survey file
+local surveydataload "use "Outputs\Step2.dta", clear"
+
+
+
+foreach qvar in `variables'{
+						`benchmarkdataload'
+						collapse (count) UniqueIDResp , by(`qvar')
+						mkmat `qvar', matrix(col_`qvar')
+						matrix col_`qvar' = (col_`qvar'')
+						mkmat UniqueIDResp, matrix(num_`qvar')
+						matrix num_`qvar' = ( num_`qvar'')
+						
+						
+						matrix `qvar' = num_`qvar'
+						//replace column names with the row number of collapsed data set
+						numlist "1/`r(N)'"
+						mat colnames `qvar' = `r(numlist)'
+						
+						matrix coleq `qvar' = _one
+						matrix rownames `qvar' = `qvar'
+						}
+
+clear
+
+
+//Load Survey data
+`surveydataload'
+//Merge Benchmark to the survey data
+merge 1:1 UniqueIDResp using "Outputs\Step3.dta"
+
+//Only keep survey records that matched to benchmark file
+keep if _merge==3
+
+
+//Rake!
+		generate finalwgt = 1
+		generate byte _one = 1
+		//Rake all variables no trimming
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`product' `demographics') generate(rakedwgt1)		
+		//Rake product variables no trimming
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`product') generate(rakedwgt2)	
+		//Rake demographic variables no trimming
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`demographics') generate(rakedwgt3)	
+		//Rake all variables trimmed
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`product' `demographics') trimlorel(1) trimhirel(70) generate(rakedwgt4)		
+		//Rake product variables trimmed
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`product') trimloabs(1) trimhiabs(70) generate(rakedwgt5)	
+		//Rake demographic variables trimmed
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`demographics') trimloabs(1) trimhiabs(70) generate(rakedwgt6)			
+		//Rake all variables trimmed halfway
+		ipfraking [pw=finalwgt], iterate(300) ctotal(`demographics') trimloabs(1) trimhiabs(150) generate(rakedwgt7)
+		
+		egen sub_rakedwgt1  = total(rakedwgt1)
+		egen sub_rakedwgt2  = total(rakedwgt2)
+		egen sub_rakedwgt3  = total(rakedwgt3)
+		egen sub_rakedwgt4  = total(rakedwgt4)
+		egen sub_rakedwgt5  = total(rakedwgt5)
+		egen sub_rakedwgt6  = total(rakedwgt6)
+		egen sub_rakedwgt7  = total(rakedwgt7)
+		egen sub_finalwgt	= total(finalwgt)
+	
+		replace rakedwgt1=rakedwgt1/sub_rakedwgt1*sub_finalwgt	
+		replace rakedwgt2=rakedwgt2/sub_rakedwgt2*sub_finalwgt	
+		replace rakedwgt3=rakedwgt3/sub_rakedwgt3*sub_finalwgt	
+		replace rakedwgt4=rakedwgt4/sub_rakedwgt4*sub_finalwgt	
+		replace rakedwgt5=rakedwgt5/sub_rakedwgt5*sub_finalwgt	
+		replace rakedwgt6=rakedwgt6/sub_rakedwgt6*sub_finalwgt	
+		replace rakedwgt7=rakedwgt7/sub_rakedwgt7*sub_finalwgt	
+		drop sub_*
+
+//Create Final outputs
+gen TT_Survey_Weight=`finalweight'
+save "Outputs\Step4.dta", replace
+

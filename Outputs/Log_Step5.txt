@@ -1,0 +1,334 @@
+----------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jschintz\Dropbox (CFSI)\Programs\Inform\CFHS Typing Tool\Typing Tool Standardization\Example (Patelco)
+> \Scripts and Outputs\Outputs\Log_Step5.txt
+  log type:  text
+ opened on:   3 Jan 2017, 16:03:56
+
+.         
+.         //Define which variables need results reported
+.         local variables TTSurvey_Tier TTSurvey_Segment TTSurvey_Q_QIncomeGroup product_loggedin product_indirect demo_inco
+> megroup demo_age demo_county demo_gender demo_marital product_CC product_autoloan product_checking product_consumerloan   
+> product_mortgage product_nonmortgageCCLoan product_retirement product_savings TTSurvey_Q_Q1 TTSurvey_Q_Q2 TTSurvey_Q_Q3 TT
+> Survey_Q_Q4 TTSurvey_Q_Q5 TTSurvey_Q_Q6 TTSurvey_Q_Q7 TTSurvey_Q_Q8 TTSurvey_Q_Q9 TTSurvey_Q_Q10 TTSurvey_Calculated_DSFOG
+
+. 
+. //----------------------------------------------------------------------------------------      
+. //      Step 2 Output results
+.         local rowstart=1
+
+.         foreach qvar in `variables'{
+  2.                                                 use"Outputs\Step4.dta", clear
+  3.                                                 rename finalwgt Unweighted
+  4.                                                 collapse (sum) Unweighted rakedwgt1 rakedwgt2 rakedwgt3 rakedwgt4 raked
+> wgt5 rakedwgt6 rakedwgt7, by (`qvar')
+  5.                                                 egen sub_finalwgt       = total(Unweighted)
+  6.                                                 replace Unweighted=Unweighted/sub_finalwgt
+  7.                                                 replace rakedwgt1=rakedwgt1/sub_finalwgt
+  8.                                                 replace rakedwgt2=rakedwgt2/sub_finalwgt
+  9.                                                 replace rakedwgt3=rakedwgt3/sub_finalwgt
+ 10.                                                 replace rakedwgt4=rakedwgt4/sub_finalwgt
+ 11.                                                 replace rakedwgt5=rakedwgt5/sub_finalwgt
+ 12.                                                 replace rakedwgt6=rakedwgt6/sub_finalwgt
+ 13.                                                 replace rakedwgt7=rakedwgt7/sub_finalwgt
+ 14.                                                 //store number of values to `r(N)'
+.                                                 count 
+ 15.                                                 export excel using "Outputs\WeightingPreliminaryResults.xlsx", sheet("C
+> ombined`c(current_date)'", modify) cell(A`rowstart') firstrow(variables)
+ 16.                                                 local rowstart = `rowstart' + `r(N)' + 2
+ 17.                                                 }
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+  3
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+  7
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+  4
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+  4
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+  5
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(8 real changes made)
+(8 real changes made)
+(8 real changes made)
+(8 real changes made)
+(8 real changes made)
+(8 real changes made)
+(8 real changes made)
+(8 real changes made)
+  8
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+(3 real changes made)
+  3
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+(2 real changes made)
+  2
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+  7
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+  6
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+  6
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+  5
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+(5 real changes made)
+  5
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+  7
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+(6 real changes made)
+  6
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+  4
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+  7
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+(7 real changes made)
+  7
+file Outputs\WeightingPreliminaryResults.xlsx saved
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+(4 real changes made)
+  4
+file Outputs\WeightingPreliminaryResults.xlsx saved
+
+. 
+end of do-file
+
+. exit, clear

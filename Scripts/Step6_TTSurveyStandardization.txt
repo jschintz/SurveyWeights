@@ -1,0 +1,200 @@
+//	Step 1 Enter required variables
+//	Change required parameters unique to each project deployment
+
+
+//	System Inputs
+	//	Execute without need to click more
+	set more off
+
+	//	Close any currently open log file
+	capture log close
+
+	//	Location of analysis input and outputs
+	cd "C:\Users\jschintz\Dropbox (CFSI)\Programs\Inform\CFHS Typing Tool\Typing Tool Standardization\Example (Patelco)\Scripts and Outputs"
+	
+	//	Create a log of executable
+	log using Outputs\Log_Step6.txt, text replace
+	
+//Define banners *** Use variables as defined in "Outputs/Step4.dta"
+
+	//Which variables contain values to be used as questions definitions (which variables need a separate tab/worksheet)
+	/*
+	//Place to keep list of variables that have already ran and do not need updating 
+		local qvars 	TTSurvey_Tier TTSurvey_Segment  TTSurvey_Q_Q1 TTSurvey_Q_Q2 TTSurvey_Q_Q3 TTSurvey_Q_Q4  TTSurvey_Q_Q5 TTSurvey_Q_Q6 TTSurvey_Q_Q7 TTSurvey_Q_Q8 TTSurvey_Q_Q9 ///
+					TTSurvey_Q_Q10 TTSurvey_Q_QIncomeGroup TTSurvey_Calculated_DSFOG ///
+					demo_MSA demo_Urbanrural demo_age demo_county demo_gender demo_income demo_incomegroup demo_marital ///
+					product_CC product_autoloan product_checking product_consumerloan product_indirect product_loggedin product_mortgage ///
+					product_nonmortgageCCLoan product_retirement product_savings ///
+					TTSurvey_Q_Q2Group TTSurvey_Q_Q1Group TTSurvey_Q_Q4Group TTSurvey_Q_Q5Group product_numberG TTSurvey_Q_QIncomeGroup
+	
+	*/
+		local qvars 	TTSurvey_Tier TTSurvey_Segment  TTSurvey_Q_Q1 TTSurvey_Q_Q2 TTSurvey_Q_Q3 TTSurvey_Q_Q4  TTSurvey_Q_Q5 TTSurvey_Q_Q6 TTSurvey_Q_Q7 TTSurvey_Q_Q8 TTSurvey_Q_Q9 ///
+				TTSurvey_Q_Q10 TTSurvey_Q_QIncomeGroup TTSurvey_Calculated_DSFOG ///
+				demo_MSA demo_Urbanrural demo_age demo_county demo_gender demo_income demo_incomegroup demo_marital ///
+				product_CC product_autoloan product_checking product_consumerloan product_indirect product_loggedin product_mortgage ///
+				product_nonmortgageCCLoan product_retirement product_savings ///
+				TTSurvey_Q_Q2Group TTSurvey_Q_Q1Group TTSurvey_Q_Q4Group TTSurvey_Q_Q5Group product_numberG TTSurvey_Q_QIncomeGroup
+	
+	//Which variables contain values to be used as column definitions (which variables create a column for each value within the variable.
+	/*
+	//Place to keep list of variables that have already ran and do not need updating 
+	*/
+	local cvars TTSurvey_Tier TTSurvey_Segment demo_age TTSurvey_Q_QIncomeGroup  ///
+				product_indirect product_loggedin product_CC  product_checking  product_mortgage ///
+				product_nonmortgageCCLoan product_retirement product_savings product_autoloan product_consumerloan ///
+				demo_Urbanrural demo_MSA demo_county demo_marital demo_gender
+
+//----------------------------------------------------------------------------------------------------------------------------				
+//Step 2 Creates banners.  This process is lengthy.  Be sure to disable any programs that can cause write conflicts, ie dropbox.
+//Replace any old version of the banner file with the same name
+use "Input Data Files/BannersCleanser.dta", clear
+export excel test using "Outputs/tabulations `c(current_date)'.xlsx", sheet("RemoveThisSheet") cell(A1) replace
+foreach qvar in `qvars'{
+							local row = 5
+							set matsize 10000
+							//Load Data
+							use "Outputs/Step4.dta", clear
+						
+						// generate variables for which act as the metrics.  Those variables that need summed
+						gen float dummy_total = 1
+						gen float  weighted_total = TT_Survey_Weight
+						gen float sum_dummy_total = dummy_total
+						gen float sum_weighted_total  = weighted_total
+
+						// create a new column for each of the values within those variables
+						foreach cvar in `cvars'{
+												levelsof `cvar', local(levels) 
+												foreach l of local levels {		
+																				local smallvar = substr("`cvar'",strlen("`cvar'")-strpos(strreverse("`cvar'"), "_")+2,.)
+																				local g_`smallvar'_`l' : variable label `cvar'
+																				//local g_`smallvar'_`l'_val : variable `cvar' `l'
+																				gen g_`smallvar'_`l' = .
+																				replace g_`smallvar'_`l' = sum_weighted_total if `cvar' == `l'
+																				local smallval_lab : label `smallvar' `l'
+																				label variable g_`smallvar'_`l' "`smallvar' = smallval_lab"																			
+																				}
+												}
+
+						//create new dataset only with summed values of those variables that have been identified as having their own sheets
+						collapse (sum) sum_weighted_total sum_dummy_total g_* , by(`qvar')
+						
+	
+						// create subtotals
+						egen sub_dummy_total 	 = total(sum_dummy_total)
+						egen sub_weighted_total  = total(sum_weighted_total)
+						
+						//calculate the percentage of the subtotal for any of the columns created above
+						local gs g*
+						foreach avar of varlist `gs' {
+												egen sub_`avar' = total(`avar')
+												gen per_`avar' = `avar'/sub_`avar'
+												
+												local ques_start= substr("`avar'",3,.)
+												local splitat = strpos("`ques_start'","_")
+												local ques_word= substr("`ques_start'",1,`splitat'-1)
+												local ques_num= substr("`ques_start'",`splitat'+1,.)
+												local ques_lab : label `ques_word' `ques_num'
+												
+												label variable per_`avar' "`ques_word' = `ques_lab'"
+												}
+						
+						//create outputs	
+						gen per_wght_total  = sum_weighted_total / sub_weighted_total
+						label variable per_wght_total "% Total Sample, Weighted"
+						gen per_dummy_total  = sum_dummy_total / sub_dummy_total
+						label variable per_dummy_total "% Total Sample, Unweighted"
+						label variable sum_weighted_total "# Total Sample, Weighted"
+						label variable sum_dummy_total "# Total Sample, Unweighted"	
+
+							//created a matrix of the results so that the results can be outputeed via putexcel command
+							//mkmat `qvar' sum_dummy_total per_dummy_total sum_weighted_total per_wght_total  per_g*
+						
+							//calculates the test for difference in population proportions
+								foreach avar of varlist `gs' {
+								//Numerator
+								gen num_`avar'= per_`avar' - per_wght_total
+								//Pooled sample proportion.
+								gen psp_`avar' = (`avar' + sum_weighted_total)/(sub_`avar' + sub_weighted_total)
+								//Standard Error
+								gen SE_`avar' = sqrt(((1-psp_`avar')*psp_`avar')*(1/sub_weighted_total + 1/sub_`avar'))
+								//Z-Score
+								gen z_`avar' = abs(num_`avar' / SE_`avar')
+								// P-Value
+								gen p_`avar' = 2*(1-normal(abs(z_`avar'))) 
+								//make matrix
+								mkmat p_`avar'
+								//add colors
+								gen str color_`avar' = "white"
+								replace color_`avar' = "lightblue" if p_`avar'<=.05 & num_`avar'>0
+								replace color_`avar' = "lightsalmon" if p_`avar'<=.05 & num_`avar'<0
+								
+								//Create labels
+								local ques_start= substr("`avar'",3,.)
+								local splitat = strpos("`ques_start'","_")
+								local ques_word= substr("`ques_start'",1,`splitat'-1)
+								local ques_num= substr("`ques_start'",`splitat'+1,.)
+								local ques_lab : label `ques_word' `ques_num'
+								
+								label variable p_`avar' "P-val `ques_word' = `ques_lab'"
+								
+								}	
+
+
+							
+						
+						export excel `qvar' using "Outputs/tabulations `c(current_date)'.xlsx", sheet(`qvar') sheetreplace cell(A1) firstrow(varlabels)  //Sets sheet blank.  Remove previously ran results
+						sleep 300
+						export excel `qvar' sum_dummy_total per_dummy_total  sum_weighted_total per_wght_total per_g* using "Outputs/tabulations `c(current_date)'.xlsx", sheet(`qvar') sheetmodify cell(A1) firstrow(varlabels)
+						sleep 300
+						local prow = `r(N)' + 3
+						export excel `qvar' p_g* using "Outputs/tabulations `c(current_date)'.xlsx", sheet(`qvar') sheetmodify cell(E`prow') firstrow(varlabels)
+						sleep 300
+						
+														
+						//Adds in color
+						
+
+							local row = 2
+							local quote = `"""'
+							local rows = `row'
+							local col = 6
+							
+							local white_cell=""
+							local lightblue_cell=""
+							local lightsalmon_cell=""
+							
+							putexcel set "Outputs/tabulations `c(current_date)'.xlsx", modify sheet(`qvar')
+							
+							foreach avar of varlist `gs' {
+													
+													
+													//Inputs variable columns
+													excelcol `col'
+													local colname `r(column)'
+												
+													local colorrows = _N
+													local colorrow = `row'
+													//outputs color formatting
+													
+
+													forvalues i = 1/`colorrows' {
+																				
+																				local color_des = color_`avar'[`i']
+																				if "`color_des'" == "white"  local white_cell= "`white_cell' (`colname'`colorrow')"
+																				if "`color_des'" == "lightblue"  local lightblue_cell= "`lightblue_cell' (`colname'`colorrow')"
+																				if "`color_des'" == "lightsalmon"  local lightsalmon_cell= "`lightsalmon_cell' (`colname'`colorrow')"
+																				local colorrow = `colorrow' + 1
+																				}
+														//display `white_cell'
+														//display `lightblue_cell'
+														//display `lightsalmon_cell'
+
+														
+														local col = `col'+1
+														
+													}	
+								if "`white_cell'" != "" qui putexcel `white_cell' ,fpattern(solid, white)
+								if "`lightblue_cell'" != "" qui putexcel `lightblue_cell' ,fpattern(solid, lightblue)
+								if "`lightsalmon_cell'" != "" qui putexcel `lightsalmon_cell' ,fpattern(solid, lightsalmon)						
+						//clear
+						}	

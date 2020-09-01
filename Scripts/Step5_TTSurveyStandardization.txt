@@ -1,0 +1,41 @@
+//	Step 1 Enter required variables
+//	Change required parameters unique to each project deployment
+
+
+//	System Inputs
+	//	Execute without need to click more
+	set more off
+
+	//	Close any currently open log file
+	capture log close
+
+	//	Location of analysis input and outputs
+	cd "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201608 - Patelco Finhealth Segmentation\4. Data & Analysis\Scripts and Outputs"
+	
+	//	Create a log of executable
+	log using Outputs\Log_Step5.txt, text replace
+	
+	//Define which variables need results reported
+	local variables TTSurvey_Tier TTSurvey_Segment TTSurvey_Q_QIncomeGroup product_loggedin product_indirect demo_incomegroup demo_age demo_county demo_gender demo_marital product_CC product_autoloan product_checking product_consumerloan   product_mortgage product_nonmortgageCCLoan product_retirement product_savings TTSurvey_Q_Q1 TTSurvey_Q_Q2 TTSurvey_Q_Q3 TTSurvey_Q_Q4 TTSurvey_Q_Q5 TTSurvey_Q_Q6 TTSurvey_Q_Q7 TTSurvey_Q_Q8 TTSurvey_Q_Q9 TTSurvey_Q_Q10 TTSurvey_Calculated_DSFOG
+
+//----------------------------------------------------------------------------------------	
+//	Step 2 Output results
+	local rowstart=1
+	foreach qvar in `variables'{
+						use"Outputs\Step4.dta", clear
+						rename finalwgt Unweighted
+						collapse (sum) Unweighted rakedwgt1 rakedwgt2 rakedwgt3 rakedwgt4 rakedwgt5 rakedwgt6 rakedwgt7, by (`qvar')
+						egen sub_finalwgt	= total(Unweighted)
+						replace Unweighted=Unweighted/sub_finalwgt
+						replace rakedwgt1=rakedwgt1/sub_finalwgt
+						replace rakedwgt2=rakedwgt2/sub_finalwgt
+						replace rakedwgt3=rakedwgt3/sub_finalwgt
+						replace rakedwgt4=rakedwgt4/sub_finalwgt
+						replace rakedwgt5=rakedwgt5/sub_finalwgt
+						replace rakedwgt6=rakedwgt6/sub_finalwgt
+						replace rakedwgt7=rakedwgt7/sub_finalwgt
+						//store number of values to `r(N)'
+						count 
+						export excel using "Outputs\WeightingPreliminaryResults.xlsx", sheet("Combined`c(current_date)'", modify) cell(A`rowstart') firstrow(variables)
+						local rowstart = `rowstart' + `r(N)' + 2
+						}

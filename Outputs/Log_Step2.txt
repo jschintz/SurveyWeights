@@ -1,0 +1,577 @@
+----------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jschintz\Dropbox (CFSI)\Programs\Inform\CFHS Typing Tool\Typing Tool Standardization\Example (Patelco)
+> \Scripts and Outputs\Outputs\Log_Step2.txt
+  log type:  text
+ opened on:   3 Jan 2017, 15:59:50
+
+.         
+.         
+.         //No custom info needs to be defined here.  Script should execute properly if step 1 was completed.  
+.         
+.         //      ----------------------------------------------------------
+. //      Step 2 type survey responses into CFHS consumer segments
+.         //import file from step 1
+.         use "Outputs\Step1.dta", clear
+
+.         //Generate variables with 0 values
+.         gen TTSurvey_Step1=0
+
+.         gen TTSurvey_Step2=0
+
+.         gen TTSurvey_Step3=0
+
+.         gen TTSurvey_Step4a=0
+
+.         gen TTSurvey_Step4b=0
+
+.         gen TTSurvey_Step5=0
+
+.         gen TTSurvey_Step6=0
+
+.         gen TTSurvey_Step7=0
+
+.         gen TTSurvey_Step8a=0
+
+.         gen TTSurvey_Step8b=0
+
+.         gen TTSurvey_Step9=0
+
+.         gen TTSurvey_Stepdsfo_ratio_1=0
+
+.         gen TTSurvey_Stepdsfo_ratio_4=0
+
+.         
+. 
+. //Create Binary step variables
+. //Assumes code values/labels do not change across implementations 
+.         //If Step1 = 5 'Next 5 to 10 years' or 6 'Longer than 10 years', then recode to 1, if not then code to  0
+.         replace TTSurvey_Step1=1 if TTSurvey_Q_Q1==5 | TTSurvey_Q_Q1==6
+(2,217 real changes made)
+
+.         //If Step2 = 1 or 2 'Don't Save', then recode to 1, if not then code to  0
+.         replace TTSurvey_Step2=1 if TTSurvey_Q_Q2==1 | TTSurvey_Q_Q2==2
+(757 real changes made)
+
+.         //If Step3 = 1 'Plans Ahead' keep 1, if not then code to 0
+.         replace TTSurvey_Step3=1 if TTSurvey_Q_Q3==1
+(2,597 real changes made)
+
+.         //If Step4a > 3 code as 1, if not then code to 0
+.         replace TTSurvey_Step4a=1 if TTSurvey_Q_Q4>3
+(1,364 real changes made)
+
+.         //If Step4b > 3 code as 1, if not then code to 0
+.         replace TTSurvey_Step4b=1 if TTSurvey_Q_Q5>3
+(1,394 real changes made)
+
+.         //If Step5 = 1 'Keeping up with all bills and payments without any difficulties' or = 7 'Don't have any bills or c
+> redit payments' code as 1, if not then code to 0
+.         replace TTSurvey_Step5=1 if TTSurvey_Q_Q6==1 | TTSurvey_Q_Q6==7
+(2,602 real changes made)
+
+.         //If Step6 = 1 'Never, code as 1, if not code to 0
+.         replace TTSurvey_Step6=1 if TTSurvey_Q_Q7==1 
+(2,851 real changes made)
+
+.         //If Step7 = 4 'Very Confident', code as 1, if not code to 0
+.         replace TTSurvey_Step7=1 if TTSurvey_Q_Q8==4 
+(2,735 real changes made)
+
+.         //If Step8 = 6 "more than 12 months", Step8a code as 1, if not code to 0
+.         replace TTSurvey_Step8a=1 if TTSurvey_Q_Q9==6
+(1,371 real changes made)
+
+.         //If Step8 = 1,2,3 "Less than or equal to one week", "More than one week but less than or equal to one month", or"
+> More than one month but less than or equal to three months" Step8b code as 1, if not code to 0
+.         replace TTSurvey_Step8b=1 if TTSurvey_Q_Q9==1 | TTSurvey_Q_Q9==2 | TTSurvey_Q_Q9==3
+(1,475 real changes made)
+
+.         //If Step9 = 5 'Excellent', code as 1, if not code to 0
+.         replace TTSurvey_Step9=1 if TTSurvey_Q_Q10==5
+(2,244 real changes made)
+
+.         //If Step10 ($$ given) > 0, Step10a code as the #, if not code to 0
+.         replace TTSurvey_Q_Q12=1116 if TTSurvey_Q_Q11==3  //Null replacements.  Replaces don't know with average
+(27 real changes made)
+
+.         replace TTSurvey_Q_Q12=0 if TTSurvey_Q_Q11==2  //0 replacements for no payments
+(1,489 real changes made)
+
+.         replace TTSurvey_Q_Q14=0 if TTSurvey_Q_Q13==2  //0 replacements for no payments
+(860 real changes made)
+
+.         gen TTSurvey_Calculated_DSFO = (TTSurvey_Q_Q12+TTSurvey_Q_Q14)/(TTSurvey_Q_Q15/12)
+(26 missing values generated)
+
+.         replace TTSurvey_Calculated_DSFO=. if TTSurvey_Q_Q13==3  //Null replacements.  Cannot calculate DSFO if mortgage i
+> s unkown
+(1 real change made, 1 to missing)
+
+.         gen TTSurvey_Calculated_DSFOG=.
+(4,540 missing values generated)
+
+.                         replace TTSurvey_Calculated_DSFOG = 4 if TTSurvey_Calculated_DSFO >=.4 & TTSurvey_Calculated_DSFO!
+> =.
+(1,616 real changes made)
+
+.                         replace TTSurvey_Calculated_DSFOG = 3 if TTSurvey_Calculated_DSFO <.4
+(2,897 real changes made)
+
+.                         replace TTSurvey_Calculated_DSFOG = 2 if TTSurvey_Calculated_DSFO <.15
+(1,118 real changes made)
+
+.                         replace TTSurvey_Calculated_DSFOG = 1 if TTSurvey_Q_Q13==3 | TTSurvey_Q_Q11==3  
+(48 real changes made)
+
+.         label define TTSurvey_Calculated_DSFOG 4 "40% or more" 3 "15% - 39.99%" 2 "Under 15%" 1 "Don't know"
+
+.         label values TTSurvey_Calculated_DSFOG TTSurvey_Calculated_DSFOG
+
+.         replace TTSurvey_Stepdsfo_ratio_1=1 if TTSurvey_Calculated_DSFO<=.15
+(1,118 real changes made)
+
+.         //If Step10  = "Don't Know", Step10b code as 1, if not code to 0
+.         replace TTSurvey_Stepdsfo_ratio_4=1 if TTSurvey_Q_Q13==3
+(27 real changes made)
+
+. 
+. //Create Segment Scores 
+.         //Segment 1 - Settled Savers
+.         gen Segment1Score =  ///
+>                                                   (TTSurvey_Step1                       *       0.000) ///
+>                                                 + (TTSurvey_Step2                       *       0.000) ///
+>                                                 + (TTSurvey_Step3                       *       0.000) ///
+>                                                 + (TTSurvey_Step4a                      *       0.000) ///
+>                                                 + (TTSurvey_Step4b                      *       0.000) ///
+>                                                 + (TTSurvey_Step5                       *       0.000) ///
+>                                                 + (TTSurvey_Step6                       *       0.000) ///
+>                                                 + (TTSurvey_Step7                       *       0.000) ///
+>                                                 + (TTSurvey_Step8a                      *       0.000) ///
+>                                                 + (TTSurvey_Step8b                      *       0.000) ///
+>                                                 + (TTSurvey_Step9                       *       0.000) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1    *       0.000) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4    *       0.000) ///
+>                                                 + 0.000
+
+. 
+.         //Segment 2 - Proactive Planners        
+.         gen Segment2Score = ///
+>                                                   (TTSurvey_Step1  * -2.54673979023899) ///
+>                                                 + (TTSurvey_Step2 * 2.88144521423956) ///
+>                                                 + (TTSurvey_Step3 * 10.9882715641438) ///
+>                                                 + (TTSurvey_Step4a * 8.08921061513512) ///
+>                                                 + (TTSurvey_Step4b * -4.25948590145711) ///
+>                                                 + (TTSurvey_Step5 * -6.01151532018178) ///
+>                                                 + (TTSurvey_Step6 * -4.52247632731719) ///
+>                                                 + (TTSurvey_Step7 * -5.73071655349001) ///
+>                                                 + (TTSurvey_Step8a * -4.38443866905437) ///
+>                                                 + (TTSurvey_Step8b * 10.7232943004641) ///
+>                                                 + (TTSurvey_Step9 * -4.89171678342084) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1 * -4.49458758149359) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4 * -2.7326529464017) ///
+>                                                 + 11.759007560449
+
+. 
+.         //Segment 3 - On Track  
+.         gen Segment3Score = ///
+>                                                   (TTSurvey_Step1  * -11.1409761012654) ///
+>                                                 + (TTSurvey_Step2 * 1.39669825006409) ///
+>                                                 + (TTSurvey_Step3 * 0.901107743992129) ///
+>                                                 + (TTSurvey_Step4a * 5.3083892519113) ///
+>                                                 + (TTSurvey_Step4b * -2.14008707179561) ///
+>                                                 + (TTSurvey_Step5 * -3.63011468835856) ///
+>                                                 + (TTSurvey_Step6 * -2.55175331611846) ///
+>                                                 + (TTSurvey_Step7 * -3.31703697776495) ///
+>                                                 + (TTSurvey_Step8a * -2.69635472785959) ///
+>                                                 + (TTSurvey_Step8b * 8.55629628721757) ///
+>                                                 + (TTSurvey_Step9 * -2.3852012093499) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1 * -1.98786789729437) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4 * -1.01673476478212) ///
+>                                                 + 16.2070717280176
+
+. 
+.                         
+.         //Segment 4 - Uphill Battle     
+.         gen Segment4Score = ///
+>                                                   (TTSurvey_Step1  * -3.22157100303558) ///
+>                                                 + (TTSurvey_Step2 * 5.71930060374136) ///
+>                                                 + (TTSurvey_Step3 * -2.11112159512371) ///
+>                                                 + (TTSurvey_Step4a * 11.6937534107308) ///
+>                                                 + (TTSurvey_Step4b * -6.68038826980978) ///
+>                                                 + (TTSurvey_Step5 * -8.38347610311133) ///
+>                                                 + (TTSurvey_Step6 * -6.92530484029482) ///
+>                                                 + (TTSurvey_Step7 * -8.53858146834967) ///
+>                                                 + (TTSurvey_Step8a * -5.04616936664479) ///
+>                                                 + (TTSurvey_Step8b * 12.3148563976834) ///
+>                                                 + (TTSurvey_Step9 * -6.80583251225388) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1 * -4.11769274617641) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4 * -1.69621401039244) ///
+>                                                 + 18.7316398983976
+
+. 
+.                         
+.         //Segment 5 - Future Focused    
+.         gen Segment5Score = ///
+>                                                   (TTSurvey_Step1  * 9.97439452505059) ///
+>                                                 + (TTSurvey_Step2 * 0.929185942473857) ///
+>                                                 + (TTSurvey_Step3 * 0.79341445469405) ///
+>                                                 + (TTSurvey_Step4a * 5.36468857829557) ///
+>                                                 + (TTSurvey_Step4b * -2.03272906854171) ///
+>                                                 + (TTSurvey_Step5 * -4.22823983678642) ///
+>                                                 + (TTSurvey_Step6 * -2.60839346945926) ///
+>                                                 + (TTSurvey_Step7 * -2.70901797567471) ///
+>                                                 + (TTSurvey_Step8a * -3.86116087267319) ///
+>                                                 + (TTSurvey_Step8b * 8.45307784817755) ///
+>                                                 + (TTSurvey_Step9 * -2.71813650962577) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1 * -2.10032654055404) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4 * -1.70420920457358) ///
+>                                                 + 6.2208849330363
+
+. 
+.                         
+.         //Segment 6 - Hopeful Strugglers        
+.         gen Segment6Score = ///
+>                                                   (TTSurvey_Step1  * -2.06864898657042) ///
+>                                                 + (TTSurvey_Step2 * 3.67626725381796) ///
+>                                                 + (TTSurvey_Step3 * -9.02905354400949) ///
+>                                                 + (TTSurvey_Step4a * 9.13250835006125) ///
+>                                                 + (TTSurvey_Step4b * -3.93072338814624) ///
+>                                                 + (TTSurvey_Step5 * -6.73763814302613) ///
+>                                                 + (TTSurvey_Step6 * -4.65192883767295) ///
+>                                                 + (TTSurvey_Step7 * -5.25406598068229) ///
+>                                                 + (TTSurvey_Step8a * -3.66079136881942) ///
+>                                                 + (TTSurvey_Step8b * 10.9872011335543) ///
+>                                                 + (TTSurvey_Step9 * -4.36754454320266) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1 * -3.80011264289148) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4 * -2.56681587798046) ///
+>                                                 + 21.7874622872071
+
+. 
+.                         
+.         //Segment 7 - Confused Youngsters
+.         gen Segment7Score = ///
+>                                                   (TTSurvey_Step1  * -4.04302495351854) ///
+>                                                 + (TTSurvey_Step2 * 4.25912224673764) ///
+>                                                 + (TTSurvey_Step3 * -0.847089426082088) ///
+>                                                 + (TTSurvey_Step4a * 8.5731447448938) ///
+>                                                 + (TTSurvey_Step4b * -3.53135943857668) ///
+>                                                 + (TTSurvey_Step5 * -5.08917649316651) ///
+>                                                 + (TTSurvey_Step6 * -4.63270587332757) ///
+>                                                 + (TTSurvey_Step7 * -6.6869660421545) ///
+>                                                 + (TTSurvey_Step8a * -3.30354265080347) ///
+>                                                 + (TTSurvey_Step8b * 9.92186628784047) ///
+>                                                 + (TTSurvey_Step9 * -4.9802959155247) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_1 * -3.07523809463846) ///
+>                                                 + (TTSurvey_Stepdsfo_ratio_4 * 1.90513402767917) ///
+>                                                 + 19.2466499974449
+
+.         
+. //Segment Exponentials
+.         gen  SumTotalExp=exp(Segment1Score) + exp(Segment2Score) + exp(Segment3Score) + exp(Segment4Score) + exp(Segment5S
+> core) + exp(Segment6Score) + exp(Segment7Score)
+
+.         gen  Segment1Prob=exp(Segment1Score)/SumTotalExp 
+
+.         gen  Segment2Prob=exp(Segment2Score)/SumTotalExp 
+
+.         gen  Segment3Prob=exp(Segment3Score)/SumTotalExp 
+
+.         gen  Segment4Prob=exp(Segment4Score)/SumTotalExp 
+
+.         gen  Segment5Prob=exp(Segment5Score)/SumTotalExp 
+
+.         gen  Segment6Prob=exp(Segment6Score)/SumTotalExp 
+
+.         gen  Segment7Prob=exp(Segment7Score)/SumTotalExp 
+
+.         
+. //Max Probability       
+.         gen SegmentMaxProb=max(Segment1Prob, Segment2Prob, Segment3Prob, Segment4Prob, Segment5Prob, Segment6Prob, Segment
+> 7Prob)
+
+.         gen ProbNum=SegmentMaxProb*100
+
+.         egen ProbabilitySegment = cut(ProbNum), at(10,20,30,40,50,60,70,80,90,100)
+
+.                 
+. //Create Segment variable and label
+. gen TTSurvey_Segment=.
+(4,540 missing values generated)
+
+. replace TTSurvey_Segment=1 if Segment1Prob==SegmentMaxProb //Thriving
+(641 real changes made)
+
+. replace TTSurvey_Segment=4 if Segment2Prob==SegmentMaxProb //Striving
+(704 real changes made)
+
+. replace TTSurvey_Segment=3 if Segment3Prob==SegmentMaxProb //Stable
+(795 real changes made)
+
+. replace TTSurvey_Segment=7 if Segment4Prob==SegmentMaxProb //At Risk
+(513 real changes made)
+
+. replace TTSurvey_Segment=2 if Segment5Prob==SegmentMaxProb //Focused
+(1,052 real changes made)
+
+. replace TTSurvey_Segment=5 if Segment6Prob==SegmentMaxProb //Tenuous
+(824 real changes made)
+
+. replace TTSurvey_Segment=6 if Segment7Prob==SegmentMaxProb //Unengaged
+(11 real changes made)
+
+. 
+. label define Segment 1 "Thriving" 2 "Focused" 3 "Stable" 4 "Striving" 5 "Tenuous" 6 "Unengaged" 7 "At Risk"
+
+. label values TTSurvey_Segment Segment
+
+. label variable TTSurvey_Segment "Financial Health Segment"
+
+. 
+. //Create Tier variable and label
+. gen TTSurvey_Tier=.
+(4,540 missing values generated)
+
+. replace TTSurvey_Tier=1 if TTSurvey_Segment==1 | TTSurvey_Segment==2 | TTSurvey_Segment==3
+(2,488 real changes made)
+
+. replace TTSurvey_Tier=2 if TTSurvey_Segment==4 | TTSurvey_Segment==5
+(1,528 real changes made)
+
+. replace TTSurvey_Tier=3 if TTSurvey_Segment==6 | TTSurvey_Segment==7
+(524 real changes made)
+
+. label define Tier 1 "Healthy" 2 "Coping" 3 "Vulnerable" 
+
+. label values TTSurvey_Tier Tier
+
+. label variable TTSurvey_Tier "Financial Health Tier"
+
+. //Drop unnecessary fields
+. 
+. drop SumTotalExp
+
+. 
+. //Step 3 outputs and QC checks
+. table TTSurvey_Q_Q1     TTSurvey_Step1,         contents(freq)
+
+-----------------------------------
+When you think about |
+saving money for the |TTSurvey_Step
+future, which of     |      1      
+these time frames is |     0      1
+---------------------+-------------
+      Next few weeks |   399       
+     Next few months |   450       
+           Next year |   357       
+      Next few years |   837       
+     Next 5-10 years |          953
+Longer than 10 years |        1,264
+   None of the above |   280       
+-----------------------------------
+
+. table TTSurvey_Q_Q2     TTSurvey_Step2,         contents(freq)
+
+-------------------------------------------------------
+                                         |TTSurvey_Step
+Which of the following statements comes  |      2      
+closest to describing your savings habit |     0      1
+-----------------------------------------+-------------
+Don't save - usually spend more than inc |          220
+Don't save - usually spend about as much |          537
+Save whatever is left over at the end of | 1,211       
+Save income of one family member, spend  |    78       
+Spend regular income, save other income  |   390       
+Save regularly by putting money aside ea | 2,104       
+-------------------------------------------------------
+
+. table TTSurvey_Q_Q3     TTSurvey_Step3,         contents(freq)
+
+-------------------------------------------------------
+                                         |TTSurvey_Step
+Does your household plan ahead to make   |      3      
+sure you have the money to pay for large |     0      1
+-----------------------------------------+-------------
+Yes, my household plans ahead for large  |        2,597
+No, my household doesn't plan ahead for  |   478       
+         We would plan ahead if we could |   841       
+We do not need to plan ahead because the |   436       
+                                   Other |   132       
+                              Don't know |    56       
+-------------------------------------------------------
+
+. table TTSurvey_Q_Q4     TTSurvey_Step4a,        contents(freq)
+
+---------------------------------------------
+On a scale from 1 to 5, where  |TTSurvey_Step
+1 is 'strongly disagree', 3 is |      4a     
+neither agree nor d            |     0      1
+-------------------------------+-------------
+         1 - Strongly disagree | 1,481       
+                             2 |   681       
+3 - Neither agree nor disagree | 1,014       
+                             4 |          619
+            5 - Strongly agree |          745
+---------------------------------------------
+
+. table TTSurvey_Q_Q5     TTSurvey_Step4b,        contents(freq)
+
+---------------------------------------------
+On a scale from 1 to 5, where  |TTSurvey_Step
+1 is 'strongly disagree', 3 is |      4b     
+neither agree nor d            |     0      1
+-------------------------------+-------------
+         1 - Strongly disagree |   928       
+                             2 | 1,051       
+3 - Neither agree nor disagree | 1,167       
+                             4 |          892
+            5 - Strongly agree |          502
+---------------------------------------------
+
+. table TTSurvey_Q_Q6     TTSurvey_Step5,         contents(freq)
+
+-------------------------------------------------------
+Which one of the following statements    |TTSurvey_Step
+best describes how well your household   |      5      
+is                                       |     0      1
+-----------------------------------------+-------------
+Keeping up with all bills and payments w |        2,542
+Keeping up with all bills and payments,  | 1,375       
+Keeping up with all bills and payments,  |   368       
+Falling behind with some bills or credit |   132       
+Falling behind with many bills or credit |    38       
+                              Don't know |    25       
+ Don't have any bills or credit payments |           60
+-------------------------------------------------------
+
+. table TTSurvey_Q_Q7             TTSurvey_Step6,         contents(freq)
+
+--------------------------------
+In the past 12    |
+months, how often |
+has your          |
+household run out |TTSurvey_Step
+of money before   |      6      
+the               |     0      1
+------------------+-------------
+            Never |        2,851
+Only a few months |   764       
+      Some months |   489       
+      Most months |   218       
+      Every month |   132       
+       Don't know |    86       
+--------------------------------
+
+. table TTSurvey_Q_Q8     TTSurvey_Step7,         contents(freq)
+
+------------------------------------
+How confident are you   |
+that you could come up  |TTSurvey_St
+with $2,000 if an       |    ep7    
+unexpected need a       |    0     1
+------------------------+-----------
+   Not at all confident |  634      
+Only slightly confident |  474      
+     Somewhat confident |  697      
+         Very confident |       2,735
+------------------------------------
+
+. table TTSurvey_Q_Q9     TTSurvey_Step8a,        contents(freq)
+
+-------------------------------------------------------
+                                         |TTSurvey_Step
+How long could your household make ends  |      8a     
+meet if you faced unemployment, a longer |     0      1
+-----------------------------------------+-------------
+          Less than or equal to one week |   241       
+More than one week but less than or equa |   509       
+More than one month but less than or equ |   725       
+More than three months but less than or  |   649       
+More than six months but less than or eq |   655       
+                 More than twelve months |        1,371
+                              Don't know |   390       
+-------------------------------------------------------
+
+. table TTSurvey_Q_Q9     TTSurvey_Step8b,        contents(freq)
+
+-------------------------------------------------------
+                                         |TTSurvey_Step
+How long could your household make ends  |      8b     
+meet if you faced unemployment, a longer |     0      1
+-----------------------------------------+-------------
+          Less than or equal to one week |          241
+More than one week but less than or equa |          509
+More than one month but less than or equ |          725
+More than three months but less than or  |   649       
+More than six months but less than or eq |   655       
+                 More than twelve months | 1,371       
+                              Don't know |   390       
+-------------------------------------------------------
+
+. table TTSurvey_Q_Q10    TTSurvey_Step9 ,        contents(freq)
+
+----------------------------------------
+Your credit score is a    |
+number that tells lenders |TTSurvey_Step
+how risky you are as a    |      9      
+borrower                  |     0      1
+--------------------------+-------------
+            1 - Very Poor |    86       
+                 2 - Poor |   238       
+                 3 - Fair |   542       
+                 4 - Good | 1,249       
+            5 - Excellent |        2,244
+               Don't know |   162       
+Didn't know I had a score |    19       
+----------------------------------------
+
+. table TTSurvey_Q_Q13 TTSurvey_Stepdsfo_ratio_4 , contents(freq)
+
+-------------------------------------------------------
+                                         |TTSurvey_Step
+                                         | dsfo_ratio_4
+ Do you have a mortgage or rent payment? |     0      1
+-----------------------------------------+-------------
+                                     Yes | 3,653       
+No, I don't pay rent or have a mortgage  |   860       
+                              Don't know |           27
+-------------------------------------------------------
+
+. table TTSurvey_Calculated_DSFOG TTSurvey_Stepdsfo_ratio_1 , contents(freq)
+
+---------------------------
+TTSurvey_Cal |TTSurvey_Step
+culated_DSFO | dsfo_ratio_1
+G            |     0      1
+-------------+-------------
+  Don't know |    47      1
+   Under 15% |        1,117
+15% - 39.99% | 1,777       
+ 40% or more | 1,598       
+---------------------------
+
+. 
+. //Reports to output
+. tab ProbabilitySegment
+
+Probability |
+    Segment |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         30 |          1        0.02        0.02
+         40 |         17        0.37        0.40
+         50 |        375        8.26        8.66
+         60 |        520       11.45       20.11
+         70 |        668       14.71       34.82
+         80 |        842       18.55       53.37
+         90 |      2,117       46.63      100.00
+------------+-----------------------------------
+      Total |      4,540      100.00
+
+. 
+. save "Outputs\Step2.dta",replace
+file Outputs\Step2.dta saved
+
+. 
+end of do-file
+
+. exit, clear

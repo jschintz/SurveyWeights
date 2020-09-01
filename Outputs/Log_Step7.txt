@@ -1,0 +1,489 @@
+----------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jschintz\Dropbox (CFSI)\Programs\Inform\CFHS Typing Tool\Typing Tool Standardization\Example (Patelco)
+> \Scripts and Outputs\Outputs\Log_Step7.txt
+  log type:  text
+ opened on:   3 Jan 2017, 16:16:40
+
+.         
+. 
+.         set more off
+
+.         //Which variables contain values to be used as questions  definitions
+.         /*
+>         //space to enter variables already ran
+>         
+>         */
+.         local qvars Q1 Q1Group Q2 Q2Group Q3 Q4 Q4Group Q5 Q5Group Q6 Q7 Q8 Q9 Q9Group Q10 DSFOG Segment Tier QIncomeGroup
+>  age Urbanrural loggedin
+
+.         
+.         
+.         //Choose which benchmark;  Options include: CFHS_National_Total CFHS_National_Banked CFHS_National_Unbanked 
+.         //                                                                                      CFHS_Northeast_Total CFHS_
+> Midwest_Total CFHS_South_Total CFHS_West_Total 
+.         //                                                                                      CFHS_Northeast_Banked CFHS
+> _Midwest_Banked CFHS_South_Banked CFHS_West_Banked
+.         local metric CFHS_West_Banked
+
+.         
+.         //Define what the labels should read
+.         local metriclabel "CFHS West Banked"
+
+.         local institutionlabel "Patelco"
+
+.         
+. //-----------------------------------------------------------------------------------------------------------------------
+. //  Assumption to this routine is that fields named the same, and with similar coded variables with similar values are ava
+> ilable in both survey & CFHS  
+. //  Step 2 - output results to excel    
+.         foreach qvar in `qvars'{
+  2.                                                                 //get survey data, rename fields & collapse
+.                                                                 use "Outputs/Step4.dta", clear
+  3.                                                                 rename TTSurvey_Q_* *
+  4.                                                                 rename TTSurvey_Calculated_* *
+  5.                                                                 rename TTSurvey_* *
+  6.                                                                 rename TT_Survey_* *
+  7.                                                                 rename demo_* *
+  8.                                                                 rename product_* *
+  9.                                                                 collapse (sum) Weight, by(`qvar')
+ 10.                                                                 //rename `qvar' dimension
+.                                                                 save "CFHS/TempCombine_Survey.dta", replace
+ 11.                                                                 clear
+ 12.                                                                 //get cfhs data & collapse
+.                                                                 use "CFHS/CFHSDataSet.dta", clear
+ 13.                                                                 collapse (sum) `metric', by(`qvar')
+ 14.                                                                 drop if `qvar'==-1
+ 15.                                                                 save "CFHS/TempCombine_CFHS", replace
+ 16.                                                                 
+.                                                                 //Combine survey & cfhs data on similarly named fields
+.                                                                 merge 1:1 `qvar' using "CFHS/TempCombine_Survey.dta" 
+ 17.                                                                 keep if _merge==3 | _merge==1
+ 18.                                                                 
+.                                                                 //%'s and Z-Scores
+.                                                                 egen sub_Weight         = total(Weight)
+ 19.                                                                 egen sub_`metric'       = total(`metric')
+ 20.                                                                 gen per_Weight          = Weight/sub_Weight
+ 21.                                                                 gen per_`metric'        = `metric'/sub_`metric'
+ 22.                                                                 
+.                                                                         //Numerator
+.                                                                         gen num_`metric'= per_`metric' - per_Weight
+ 23.                                                                         //Pooled sample proportion.
+.                                                                         gen psp_`metric' = (`metric' + Weight)/(sub_`metri
+> c' + sub_Weight)
+ 24.                                                                         //Standard Error
+.                                                                         gen SE_`metric' = sqrt(((1-psp_`metric')*psp_`metr
+> ic')*(1/sub_Weight + 1/sub_`metric'))
+ 25.                                                                         //Z-Score
+.                                                                         gen z_`metric' = abs(num_`metric' / SE_`metric')
+ 26.                                                                         // P-Value
+.                                                                         gen p_`metric' = 2*(1-normal(abs(z_`metric'))) 
+ 27.                                                                         //add colors
+.                                                                         gen str color_`metric' = "white"
+ 28.                                                                         replace color_`metric' = "lightblue" if p_`metr
+> ic'<=.05 & num_`metric'>0
+ 29.                                                                         replace color_`metric' = "lightsalmon" if p_`me
+> tric'<=.05 & num_`metric'<0
+ 30.                                                                         
+.                                                                         mkmat per_Weight per_`metric' p_`metric'
+ 31.                                                                         
+.                                                                 local row = 2
+ 32.                                                                 local endrow = `r(N)' + `row'
+ 33.                                                                 local rowheader = `row' -1
+ 34.                                                                 local quote = `"""'
+ 35.                                                                 local rows = `row'
+ 36.                                                                 local col = 6
+ 37.                                                                 local pvaluerow=`endrow'+3
+ 38.                                                                 local pvaluerows=`pvaluerow'
+ 39.                                                                 local pvalueheader=`endrow'+2
+ 40.                                                                 
+.                                                                 putexcel set "Outputs/ChartsTemplate.xlsx", modify sheet(`
+> qvar')
+ 41.                                                                 
+.                                                                 qui putexcel B`rowheader'=("`metriclabel'") C`rowheader'=(
+> "`institutionlabel'") D`rowheader'=("p-value Sig test")
+ 42.                                                                 qui putexcel B`row'=matrix(per_`metric') C`row'=matrix(
+> per_Weight ) D`row'=matrix(p_`metric') 
+ 43.                                                                 
+.                                                                 levelsof `qvar', local(levels) 
+ 44.                                                                 foreach l of local levels {     
+ 45.                                                                                                                        
+>  local val_lab : label `qvar' `l'
+ 46.                                                                                                                        
+>  qui putexcel A`rows'=("`val_lab'")
+ 47.                                                                                                                        
+>  local rows = `rows'+1
+ 48.                                                                                                                        
+>  }       
+ 49.                                                                                                                 
+.                                                         }
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q1 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 7  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(3 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5 6 7
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q1Group already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 5  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q2 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 6  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5 6
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q2Group already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 4  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3 4
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q3 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 6  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5 6
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q4 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 5  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(3 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q4Group already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 3  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q5 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 5  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q5Group already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 3  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q6 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 7  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3 4 5 6 7
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q7 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 6  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3 4 5 6
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q8 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 4  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3 4
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q9 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 7  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5 6 7
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q9Group already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         1  (_merge==1)
+        from using                          0  (_merge==2)
+
+    matched                                 4  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+(1 missing value generated)
+(1 missing value generated)
+(1 missing value generated)
+(1 missing value generated)
+(1 missing value generated)
+(1 missing value generated)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4
+file CFHS/TempCombine_Survey.dta saved
+(1 observation deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label Q10 already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 7  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3 4 5 6 7
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 4  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(3 real changes made)
+1 2 3 4
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(note: variable Segment was long, now double to accommodate using data's values)
+(label Segment already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 7  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(3 real changes made)
+1 2 3 4 5 6 7
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(note: variable Tier was long, now double to accommodate using data's values)
+(label Tier already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 3  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(2 real changes made)
+1 2 3
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(note: variable QIncomeGroup was long, now double to accommodate using data's values)
+(label QIncomeGroup already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 4  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(2 real changes made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2 3 4
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(label age already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 5  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(3 real changes made)
+1 2 3 4 5
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                                 2  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2
+file CFHS/TempCombine_Survey.dta saved
+(0 observations deleted)
+file CFHS/TempCombine_CFHS.dta saved
+(note: variable loggedin was float, now double to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                                 2  (_merge==3)
+    -----------------------------------------
+(0 observations deleted)
+variable color_CFHS_West_Banked was str5 now str9
+(1 real change made)
+variable color_CFHS_West_Banked was str9 now str11
+(1 real change made)
+1 2
+
+. 
+end of do-file
+
+. exit, clear

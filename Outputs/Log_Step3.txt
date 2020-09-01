@@ -1,0 +1,483 @@
+----------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jschintz\Dropbox (CFSI)\Programs\Inform\CFHS Typing Tool\Typing Tool Standardization\Example (Patelco)
+> \Scripts and Outputs\Outputs\Log_Step3.txt
+  log type:  text
+ opened on:   3 Jan 2017, 16:01:48
+
+. 
+. //--------------------------------------------------------------------------
+. //Step 2  Create file alterations to benchmark data.  This process is unique to each engagement
+. //This cleanup needs to fulfill one base requirement,that any fields    used in creating weights or in the banners need to
+>  be converted to labelled integers
+. //Import file
+. import delimited "Input Data Files\160930 - CFSi - Financial Health Survey - BENCHMARK - Ver 4 Sent to CFSi.csv"
+(27 vars, 305,563 obs)
+
+. 
+. 
+. //drop records outside of sampling frame
+. replace mbrage="" if mbrage=="TBD"
+(5 real changes made)
+
+. destring mbrage , replace
+mbrage has all characters numeric; replaced as byte
+(5 missing values generated)
+
+. drop if mbrage<18
+(20,692 observations deleted)
+
+. 
+. //create custom fields
+. gen product_mortgage = "N"
+
+.         replace product_mortgage = "Y" if mbrhas1stmortgageloanwithpatelco=="Y" | mbrhas2ndmortgageloanwithpatelco == "Y"
+(14,272 real changes made)
+
+.         
+. //rename unique identifier
+. rename uniqueid UniqueIDResp
+
+. 
+. //define benchamrk fields
+. rename eligible benchmark_eligble
+
+.         replace benchmark_eligble="N" if benchmark_eligble==""
+(77,947 real changes made)
+
+. rename sampled benchmark_sampled
+
+.         replace benchmark_sampled="N" if benchmark_sampled==""
+(105,090 real changes made)
+
+. rename patelcoemployeeyn benchmark_employee
+
+.         replace benchmark_employee="N" if benchmark_employee==""
+(0 real changes made)
+
+. 
+. //define demographics
+. rename genderasoffeb2014ifknown demo_gender
+
+. rename householdincomefromdemographicap demo_income
+
+. rename hhmaritalstatusfromdemographicap demo_marital
+
+.         
+. //define products
+. rename mbrhaspatelcoretirementproductyn product_retirement      
+
+. rename mbrhassavingsaccountinadditionto product_savings
+
+. rename mbrhascheckingaccountwithpatelco product_checking
+
+. drop mbrhas1stmortgageloanwithpatelco
+
+. drop mbrhas2ndmortgageloanwithpatelco
+
+. rename mbrhascreditcardwithpatelcoyn product_CC
+
+. rename mbrhasanonmortgagenoncreditcardl product_nonmortgageCCLoan
+
+. rename mbrhasautoloanwithpatelcoyn product_autoloan
+
+. rename mbrhasconsumerloanwithpatelcoyn product_consumerloan
+
+. rename mbrhasloggedintoonlinebankingsin product_loggedin
+
+. rename mbrconsideredindirectyn product_indirect
+
+. 
+. //create custom groups
+. gen demo_age =.
+(284,871 missing values generated)
+
+.         replace demo_age=6 if mbrage==.
+(5 real changes made)
+
+.         replace demo_age=5 if mbrage>=65        
+(49,446 real changes made)
+
+.         replace demo_age=4 if mbrage<65 
+(235,425 real changes made)
+
+.         replace demo_age=3 if mbrage<50 
+(152,056 real changes made)
+
+.         replace demo_age=2 if mbrage<36
+(74,527 real changes made)
+
+.         replace demo_age=1 if mbrage<25         
+(21,962 real changes made)
+
+.         label define age 1 "18-25" 2 "26-35" 3 "36-49" 4 "50-64" 5 "65 or more" 6 "Null"
+
+.         label values demo_age age
+
+. 
+. 
+. //merge with MSA info
+. gen ZIPCODE=substr( zip , 1, 5)
+(50 missing values generated)
+
+. replace ZIPCODE="" if strlen(ZIPCODE)!=5
+(249 real changes made)
+
+. merge m:1 ZIPCODE using "Input Data Files\ZipCodeToFIPS.dta", keepusing(MSAName)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                        34,365
+        from master                       577  (_merge==1)
+        from using                     33,788  (_merge==2)
+
+    matched                           284,294  (_merge==3)
+    -----------------------------------------
+
+. drop if _merge==2
+(33,788 observations deleted)
+
+. 
+. 
+. //create urban rural variable
+. gen demo_Urbanrural=.
+(284,871 missing values generated)
+
+. replace demo_Urbanrural=1 if strpos(MSAName, "MSA") > 0
+(278,190 real changes made)
+
+. replace demo_Urbanrural=2 if strpos(MSAName, "NONMETROPOLITAN") > 0
+(5,796 real changes made)
+
+. replace demo_Urbanrural=3 if demo_Urbanrural==.
+(885 real changes made)
+
+.         label define Urbanrural 1 "Urban" 2 "Rural" 3 "Nonmatch" 
+
+.         label values demo_Urbanrural Urbanrural
+
+. 
+.         
+. //create msa group
+. gen demo_MSA=.
+(284,871 missing values generated)
+
+. replace demo_MSA=1 if MSAName=="San Francisco-Oakland-Fremont, CA MSA"
+(161,282 real changes made)
+
+. replace demo_MSA=2 if MSAName=="Sacramento-Arden-Arcade-Roseville, CA MSA"
+(30,045 real changes made)
+
+. replace demo_MSA=3 if MSAName=="San Jose-Sunnyvale-Santa Clara, CA MSA"
+(20,784 real changes made)
+
+. replace demo_MSA=4 if state=="CA" & demo_MSA==.
+(46,208 real changes made)
+
+. replace demo_MSA=5 if demo_MSA==.
+(26,552 real changes made)
+
+. 
+.         label define MSA 1 "San Francisco-Oakland-Fremont" 2 "Sacramento-Arden-Arcade-Roseville" 3 "San Jose-Sunnyvale-San
+> ta Clara" 4 "Other MSA - Inside CA" 5 "Other MSA - Outside CA"
+
+.         label values demo_MSA MSA
+
+. 
+. //Convert strings to values with labels
+. label define YN  1 Y  2 N 3 NULL
+
+. label copy YN CC
+
+. label copy YN autoloan
+
+. label copy YN checking
+
+. label copy YN consumerloan
+
+. label copy YN indirect
+
+. label copy YN loggedin
+
+. label copy YN mortgage
+
+. label copy YN nonmortgageCCLoan
+
+. label copy YN retirement
+
+. label copy YN savings
+
+. 
+.         //Relabel Yes/No variables
+.         rename product_* temp_product_*
+
+.         encode temp_product_CC                                  , gen(product_CC ) label(CC)
+
+.         encode temp_product_autoloan                    , gen(product_autoloan) label(autoloan)
+
+.         encode temp_product_checking                    , gen(product_checking ) label(checking)
+
+.         encode temp_product_consumerloan                , gen(product_consumerloan ) label(consumerloan)
+
+.         encode temp_product_indirect                    , gen(product_indirect) label(indirect)
+
+.         encode temp_product_loggedin                    , gen(product_loggedin) label(loggedin)
+
+.         encode temp_product_mortgage                    , gen(product_mortgage) label(mortgage)
+
+.         encode temp_product_nonmortgageCCLoan   , gen(product_nonmortgageCCLoan) label(nonmortgageCCLoan)
+
+.         encode temp_product_retirement                  , gen(product_retirement ) label(retirement)
+
+.         encode temp_product_savings                             , gen(product_savings) label(savings)
+
+.         drop temp_product_*
+
+. 
+.         rename benchmark_* temp_benchmark_*
+
+.         encode temp_benchmark_eligble                                   , gen(benchmark_eligble) label(YN)
+
+.         encode temp_benchmark_employee                  , gen(benchmark_employee) label(YN)
+
+.         encode temp_benchmark_sampled                   , gen(benchmark_sampled) label(YN)
+
+.         drop temp_benchmark_* 
+
+. 
+. label define income  1 "Under $15,000"  2 "$15,000 - $19,999" 3 "$20,000 - $29,999"  ///
+>                                          4 "$30,000 - $39,999"  5 "$40,000 - $49,999" 6 "$50,000 - $74,999"  ///
+>                                          7 "$75,000 - $99,999"  8 "$100,000 - $149,999" 9 "$150,000 - $174,999"  ///
+>                                          10 "$175,000 - $199,999"  11 "$200,000 - $249,999" 12 "$250,000 Plus"  ///
+>                                          13 "No data, new household"    
+
+.         rename demo_income temp_demo_income
+
+.         encode temp_demo_income                                 , gen(demo_income) label(income)
+
+.         
+. 
+. label define marital  1 "Married" 2 "Single" 3 "Inferred Married" 4 "Inferred Single" 5 "No data, new household" 6 "Unknow
+> n"
+
+.         rename demo_marital temp_demo_marital
+
+.         encode temp_demo_marital                                , gen(demo_marital) label(marital)
+
+.         //Reassign, <5%
+.         replace demo_marital=1 if demo_marital==3
+(16,396 real changes made)
+
+.         replace demo_marital=2 if demo_marital==4
+(21,206 real changes made)
+
+.         replace demo_marital=1 if demo_marital==5
+(5,883 real changes made)
+
+.         replace demo_marital=1 if demo_marital==6
+(203 real changes made)
+
+.         
+. label define gender  1 "Female" 2 "Male" 3 "Unknown - Ambiguous or unisex names" 4 "Both - Mr. & Mrs. or first names like 
+> John & Mary" 
+
+.         rename demo_gender temp_demo_gender
+
+.         encode temp_demo_gender                         , gen(demo_gender) label(gender)
+
+.         //Reassign to null, <5%
+.         replace demo_gender=3 if demo_gender==4
+(134 real changes made)
+
+.         replace demo_gender=3 if demo_gender==.
+(75,133 real changes made)
+
+.         label define gender 3 "Null", modify
+
+.         
+. drop temp_demo_*        
+
+. 
+. 
+. 
+. //# of product categories       
+. gen  temp_CC =0
+
+. replace  temp_CC = 1 if product_CC==1
+(77,914 real changes made)
+
+. 
+. gen  temp_retirement =0
+
+. replace  temp_retirement =1 if product_retirement==1
+(17,715 real changes made)
+
+. 
+. gen  temp_savings =0
+
+. replace  temp_savings =1 if product_savings==1
+(71,369 real changes made)
+
+. 
+. gen  temp_checking =0
+
+. replace  temp_checking =1 if product_checking==1
+(178,303 real changes made)
+
+. 
+. gen  temp_nonmortgageCCLoan =0
+
+. replace  temp_nonmortgageCCLoan =1 if product_nonmortgageCCLoan==1
+(67,299 real changes made)
+
+. 
+. gen  temp_mortgage =0
+
+. replace  temp_mortgage =1 if product_mortgage==1
+(14,272 real changes made)
+
+. 
+. 
+. gen product_number = temp_CC + temp_retirement + temp_savings + temp_checking + temp_nonmortgageCCLoan + temp_mortgage
+
+. 
+. gen product_numberG = .
+(284,871 missing values generated)
+
+.         replace product_numberG =0 if product_number==0
+(44,251 real changes made)
+
+.         replace product_numberG =1 if product_number==1
+(119,974 real changes made)
+
+.         replace product_numberG =2 if product_number==2
+(71,110 real changes made)
+
+.         replace product_numberG =3 if product_number==3
+(36,041 real changes made)
+
+.         replace product_numberG =4 if product_number>3
+(13,495 real changes made)
+
+. 
+. label define product_numberG   0 "0" 1 "1" 2 "2"        3 "3" 4 "4+"
+
+. label values product_numberG product_numberG
+
+. 
+. drop temp_*
+
+. 
+. // create custom group
+. gen demo_incomegroup =.
+(284,871 missing values generated)
+
+. replace demo_incomegroup =4 if demo_income ==13
+(6,191 real changes made)
+
+. replace demo_incomegroup =1 if demo_income <=12
+(278,680 real changes made)
+
+. replace demo_incomegroup =2 if demo_income <=7
+(162,528 real changes made)
+
+. replace demo_incomegroup =3 if demo_income <=6
+(116,083 real changes made)
+
+. replace demo_incomegroup =4 if demo_income <=4
+(55,234 real changes made)
+
+. 
+. label define incomegroup  1 "Less than $30,000" 2 "$30,000 - $74,999" 3 "$75,000 - $99,999 - $99,999" 4 "$100,000 or more"
+
+. label values demo_incomegroup incomegroup
+
+. 
+. 
+. gen demo_county = .
+(284,871 missing values generated)
+
+. replace demo_county =1 if californiacounty =="Alameda"
+(65,041 real changes made)
+
+. replace demo_county =2 if californiacounty =="Contra Costa"
+(49,580 real changes made)
+
+. replace demo_county =3 if californiacounty =="Outside CA"
+(26,591 real changes made)
+
+. replace demo_county =4 if californiacounty =="San Mateo"
+(21,448 real changes made)
+
+. replace demo_county =5 if californiacounty =="Santa Clara"
+(21,032 real changes made)
+
+. replace demo_county =6 if californiacounty =="Sacramento"
+(19,974 real changes made)
+
+. replace demo_county =7 if californiacounty =="San Francisco"
+(19,775 real changes made)
+
+. replace demo_county =8 if demo_county==.
+(61,430 real changes made)
+
+. 
+. label define county  1 "Alameda" 2 "Contra Costa" 3 "Outside CA" 4 "San Mateo" 5 "Santa Clara" 6 "Sacramento" 7 "San Franc
+> isco" 8 "Other"
+
+. label values demo_county county
+
+. 
+. 
+. 
+. //drop unnecessary fields
+. drop city state zip fipscode countycensusareaincludescounites californiacounty ethnicityifromdemographicappend ethnicityii
+> fromdemographicappend mbrage ZIPCODE MSAName _merge 
+
+. 
+. //order variables alphabetically
+. order _all, alpha
+
+. order UniqueIDResp
+
+. 
+. //Reports to output
+. //Run report for null values after predefined criterias are dropped
+.                 mdesc
+
+    Variable    |     Missing          Total     Percent Missing
+----------------+-----------------------------------------------
+   UniqueIDResp |           0        284,871           0.00
+   benchmark~le |           0        284,871           0.00
+   benchmark~ee |           0        284,871           0.00
+   benchmark_~d |           0        284,871           0.00
+       demo_MSA |           0        284,871           0.00
+   demo_Urban~l |           0        284,871           0.00
+       demo_age |           0        284,871           0.00
+    demo_county |           0        284,871           0.00
+    demo_gender |           0        284,871           0.00
+    demo_income |           0        284,871           0.00
+   demo_incom~p |           0        284,871           0.00
+   demo_marital |           0        284,871           0.00
+     product_CC |           0        284,871           0.00
+   product_au~n |           0        284,871           0.00
+   product_ch~g |           0        284,871           0.00
+   product_co~n |           0        284,871           0.00
+   product_in~t |           0        284,871           0.00
+   product_lo~n |           0        284,871           0.00
+   product_mo~e |           0        284,871           0.00
+   product_no~n |           0        284,871           0.00
+   product_nu~r |           0        284,871           0.00
+   product_nu~G |           0        284,871           0.00
+   product_re~t |           0        284,871           0.00
+   product_sa~s |           0        284,871           0.00
+----------------+-----------------------------------------------
+
+. 
+. save "Outputs\Step3.dta",replace
+file Outputs\Step3.dta saved
+
+. 
+end of do-file
+
+. exit, clear

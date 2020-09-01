@@ -1,0 +1,108 @@
+//	Step 1 Enter required variables
+//	Change required parameters unique to each project deployment
+
+
+//	System Inputs
+	//	Execute without need to click more
+	set more off
+
+	//	Close any currently open log file
+	capture log close
+
+	//	Location of analysis input and outputs
+	cd "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201608 - Patelco Finhealth Segmentation\4. Data & Analysis\Scripts and Outputs"
+	
+	//	Create a log of executable
+	log using Outputs\Log_Step7.txt, text replace
+	
+
+	set more off
+	//Which variables contain values to be used as questions  definitions
+	/*
+	//space to enter variables already ran
+	
+	*/
+	local qvars Q1 Q1Group Q2 Q2Group Q3 Q4 Q4Group Q5 Q5Group Q6 Q7 Q8 Q9 Q9Group Q10 DSFOG Segment Tier QIncomeGroup age Urbanrural loggedin
+	
+	
+	//Choose which benchmark;  Options include: CFHS_National_Total CFHS_National_Banked CFHS_National_Unbanked 
+	//											CFHS_Northeast_Total CFHS_Midwest_Total CFHS_South_Total CFHS_West_Total 
+	//											CFHS_Northeast_Banked CFHS_Midwest_Banked CFHS_South_Banked CFHS_West_Banked
+	local metric CFHS_West_Banked
+	
+	//Define what the labels should read
+	local metriclabel "CFHS West Banked"
+	local institutionlabel "Patelco"
+	
+//-----------------------------------------------------------------------------------------------------------------------
+//  Assumption to this routine is that fields named the same, and with similar coded variables with similar values are available in both survey & CFHS	
+//  Step 2 - output results to excel	
+	foreach qvar in `qvars'{
+								//get survey data, rename fields & collapse
+								use "Outputs/Step4.dta", clear
+								rename TTSurvey_Q_* *
+								rename TTSurvey_Calculated_* *
+								rename TTSurvey_* *
+								rename TT_Survey_* *
+								rename demo_* *
+								rename product_* *
+								collapse (sum) Weight, by(`qvar')
+								//rename `qvar' dimension
+								save "CFHS/TempCombine_Survey.dta", replace
+								clear
+								//get cfhs data & collapse
+								use "CFHS/CFHSDataSet.dta", clear
+								collapse (sum) `metric', by(`qvar')
+								drop if `qvar'==-1
+								save "CFHS/TempCombine_CFHS", replace
+								
+								//Combine survey & cfhs data on similarly named fields
+								merge 1:1 `qvar' using "CFHS/TempCombine_Survey.dta" 
+								keep if _merge==3 | _merge==1
+								
+								//%'s and Z-Scores
+								egen sub_Weight	   	= total(Weight)
+								egen sub_`metric'  	= total(`metric')
+								gen per_Weight 		= Weight/sub_Weight
+								gen per_`metric' 	= `metric'/sub_`metric'
+								
+									//Numerator
+									gen num_`metric'= per_`metric' - per_Weight
+									//Pooled sample proportion.
+									gen psp_`metric' = (`metric' + Weight)/(sub_`metric' + sub_Weight)
+									//Standard Error
+									gen SE_`metric' = sqrt(((1-psp_`metric')*psp_`metric')*(1/sub_Weight + 1/sub_`metric'))
+									//Z-Score
+									gen z_`metric' = abs(num_`metric' / SE_`metric')
+									// P-Value
+									gen p_`metric' = 2*(1-normal(abs(z_`metric'))) 
+									//add colors
+									gen str color_`metric' = "white"
+									replace color_`metric' = "lightblue" if p_`metric'<=.05 & num_`metric'>0
+									replace color_`metric' = "lightsalmon" if p_`metric'<=.05 & num_`metric'<0
+									
+									mkmat per_Weight per_`metric' p_`metric'
+									
+								local row = 2
+								local endrow = `r(N)' + `row'
+								local rowheader = `row' -1
+								local quote = `"""'
+								local rows = `row'
+								local col = 6
+								local pvaluerow=`endrow'+3
+								local pvaluerows=`pvaluerow'
+								local pvalueheader=`endrow'+2
+								
+								putexcel set "Outputs/ChartsTemplate.xlsx", modify sheet(`qvar')
+								
+								qui putexcel B`rowheader'=("`metriclabel'") C`rowheader'=("`institutionlabel'") D`rowheader'=("p-value Sig test")
+								qui putexcel B`row'=matrix(per_`metric') C`row'=matrix(per_Weight ) D`row'=matrix(p_`metric') 
+								
+								levelsof `qvar', local(levels) 
+								foreach l of local levels {	
+															local val_lab : label `qvar' `l'
+															qui putexcel A`rows'=("`val_lab'")
+															local rows = `rows'+1
+															}	
+														
+							}

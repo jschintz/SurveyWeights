@@ -1,0 +1,237 @@
+//	Step 1 Enter required variables
+//	Change required parameters unique to each project deployment
+
+
+//	System Inputs
+	//	Execute without need to click more
+	set more off
+
+	//	Close any currently open log file
+	capture log close
+
+	//	Location of analysis input and outputs
+	cd "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201608 - Patelco Finhealth Segmentation\4. Data & Analysis\Scripts and Outputs"
+	
+	//	Create a log of executable
+	log using Outputs\Log_Step3.txt, text replace
+
+//--------------------------------------------------------------------------
+//Step 2  Create file alterations to benchmark data.  This process is unique to each engagement
+//This cleanup needs to fulfill one base requirement,that any fields	used in creating weights or in the banners need to be converted to labelled integers
+//Import file
+import delimited "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201608 - Patelco Finhealth Segmentation\4. Data & Analysis\Scripts and Outputs\Input Data Files\160930 - CFSi - Financial Health Survey - BENCHMARK - Ver 4 Sent to CFSi.csv"
+
+
+//drop records outside of sampling frame
+replace mbrage="" if mbrage=="TBD"
+destring mbrage , replace
+drop if mbrage<18
+
+//create custom fields
+gen product_mortgage = "N"
+	replace product_mortgage = "Y" if mbrhas1stmortgageloanwithpatelco=="Y" | mbrhas2ndmortgageloanwithpatelco == "Y"
+	
+//rename unique identifier
+rename uniqueid UniqueIDResp
+
+//define benchamrk fields
+rename eligible benchmark_eligble
+	replace benchmark_eligble="N" if benchmark_eligble==""
+rename sampled benchmark_sampled
+	replace benchmark_sampled="N" if benchmark_sampled==""
+rename patelcoemployeeyn benchmark_employee
+	replace benchmark_employee="N" if benchmark_employee==""
+
+//define demographics
+rename genderasoffeb2014ifknown demo_gender
+rename householdincomefromdemographicap demo_income
+rename hhmaritalstatusfromdemographicap demo_marital
+	
+//define products
+rename mbrhaspatelcoretirementproductyn product_retirement	
+rename mbrhassavingsaccountinadditionto product_savings
+rename mbrhascheckingaccountwithpatelco product_checking
+drop mbrhas1stmortgageloanwithpatelco
+drop mbrhas2ndmortgageloanwithpatelco
+rename mbrhascreditcardwithpatelcoyn product_CC
+rename mbrhasanonmortgagenoncreditcardl product_nonmortgageCCLoan
+rename mbrhasautoloanwithpatelcoyn product_autoloan
+rename mbrhasconsumerloanwithpatelcoyn product_consumerloan
+rename mbrhasloggedintoonlinebankingsin product_loggedin
+rename mbrconsideredindirectyn product_indirect
+
+//create custom groups
+gen demo_age =.
+	replace demo_age=6 if mbrage==.
+	replace demo_age=5 if mbrage>=65	
+	replace demo_age=4 if mbrage<65	
+	replace demo_age=3 if mbrage<50	
+	replace demo_age=2 if mbrage<36
+	replace demo_age=1 if mbrage<25		
+	label define age 1 "18-25" 2 "26-35" 3 "36-49" 4 "50-64" 5 "65 or more" 6 "Null"
+	label values demo_age age
+
+
+//merge with MSA info
+gen ZIPCODE=substr( zip , 1, 5)
+replace ZIPCODE="" if strlen(ZIPCODE)!=5
+merge m:1 ZIPCODE using "C:\Users\jschintz\Dropbox (CFSI)\Programs\Advise\201608 - Patelco Finhealth Segmentation\4. Data & Analysis\Scripts and Outputs\Input Data Files\ZipCodeToFIPS.dta", keepusing(MSAName)
+drop if _merge==2
+
+
+//create urban rural variable
+gen demo_Urbanrural=.
+replace demo_Urbanrural=1 if strpos(MSAName, "MSA") > 0
+replace demo_Urbanrural=2 if strpos(MSAName, "NONMETROPOLITAN") > 0
+replace demo_Urbanrural=3 if demo_Urbanrural==.
+	label define Urbanrural 1 "Urban" 2 "Rural" 3 "Nonmatch" 
+	label values demo_Urbanrural Urbanrural
+
+	
+//create msa group
+gen demo_MSA=.
+replace demo_MSA=1 if MSAName=="San Francisco-Oakland-Fremont, CA MSA"
+replace demo_MSA=2 if MSAName=="Sacramento-Arden-Arcade-Roseville, CA MSA"
+replace demo_MSA=3 if MSAName=="San Jose-Sunnyvale-Santa Clara, CA MSA"
+replace demo_MSA=4 if state=="CA" & demo_MSA==.
+replace demo_MSA=5 if demo_MSA==.
+
+	label define MSA 1 "San Francisco-Oakland-Fremont" 2 "Sacramento-Arden-Arcade-Roseville" 3 "San Jose-Sunnyvale-Santa Clara" 4 "Other MSA - Inside CA" 5 "Other MSA - Outside CA"
+	label values demo_MSA MSA
+
+//Convert strings to values with labels
+label define YN  1 Y  2 N 3 NULL
+label copy YN CC
+label copy YN autoloan
+label copy YN checking
+label copy YN consumerloan
+label copy YN indirect
+label copy YN loggedin
+label copy YN mortgage
+label copy YN nonmortgageCCLoan
+label copy YN retirement
+label copy YN savings
+
+	//Relabel Yes/No variables
+	rename product_* temp_product_*
+	encode temp_product_CC 					, gen(product_CC ) label(CC)
+	encode temp_product_autoloan 			, gen(product_autoloan) label(autoloan)
+	encode temp_product_checking 			, gen(product_checking ) label(checking)
+	encode temp_product_consumerloan 		, gen(product_consumerloan ) label(consumerloan)
+	encode temp_product_indirect 			, gen(product_indirect) label(indirect)
+	encode temp_product_loggedin 			, gen(product_loggedin) label(loggedin)
+	encode temp_product_mortgage 			, gen(product_mortgage) label(mortgage)
+	encode temp_product_nonmortgageCCLoan 	, gen(product_nonmortgageCCLoan) label(nonmortgageCCLoan)
+	encode temp_product_retirement 			, gen(product_retirement ) label(retirement)
+	encode temp_product_savings				, gen(product_savings) label(savings)
+	drop temp_product_*
+
+	rename benchmark_* temp_benchmark_*
+	encode temp_benchmark_eligble					, gen(benchmark_eligble) label(YN)
+	encode temp_benchmark_employee 			, gen(benchmark_employee) label(YN)
+	encode temp_benchmark_sampled			, gen(benchmark_sampled) label(YN)
+	drop temp_benchmark_* 
+
+label define income  1 "Under $15,000"  2 "$15,000 - $19,999" 3 "$20,000 - $29,999"  ///
+					 4 "$30,000 - $39,999"  5 "$40,000 - $49,999" 6 "$50,000 - $74,999"  ///
+					 7 "$75,000 - $99,999"  8 "$100,000 - $149,999" 9 "$150,000 - $174,999"  ///
+					 10 "$175,000 - $199,999"  11 "$200,000 - $249,999" 12 "$250,000 Plus"  ///
+					 13 "No data, new household"	
+	rename demo_income temp_demo_income
+	encode temp_demo_income					, gen(demo_income) label(income)
+	
+
+label define marital  1 "Married" 2 "Single" 3 "Inferred Married" 4 "Inferred Single" 5 "No data, new household" 6 "Unknown"
+	rename demo_marital temp_demo_marital
+	encode temp_demo_marital				, gen(demo_marital) label(marital)
+	//Reassign, <5%
+	replace demo_marital=1 if demo_marital==3
+	replace demo_marital=2 if demo_marital==4
+	replace demo_marital=1 if demo_marital==5
+	replace demo_marital=1 if demo_marital==6
+	
+label define gender  1 "Female" 2 "Male" 3 "Unknown - Ambiguous or unisex names" 4 "Both - Mr. & Mrs. or first names like John & Mary" 
+	rename demo_gender temp_demo_gender
+	encode temp_demo_gender				, gen(demo_gender) label(gender)
+	//Reassign to null, <5%
+	replace demo_gender=3 if demo_gender==4
+	replace demo_gender=3 if demo_gender==.
+	label define gender 3 "Null", modify
+	
+drop temp_demo_* 	
+
+
+
+//# of product categories	
+gen  temp_CC =0
+replace  temp_CC = 1 if product_CC==1
+
+gen  temp_retirement =0
+replace  temp_retirement =1 if product_retirement==1
+
+gen  temp_savings =0
+replace  temp_savings =1 if product_savings==1
+
+gen  temp_checking =0
+replace  temp_checking =1 if product_checking==1
+
+gen  temp_nonmortgageCCLoan =0
+replace  temp_nonmortgageCCLoan =1 if product_nonmortgageCCLoan==1
+
+gen  temp_mortgage =0
+replace  temp_mortgage =1 if product_mortgage==1
+
+
+gen product_number = temp_CC + temp_retirement + temp_savings + temp_checking + temp_nonmortgageCCLoan + temp_mortgage
+
+gen product_numberG = .
+	replace product_numberG =0 if product_number==0
+	replace product_numberG =1 if product_number==1
+	replace product_numberG =2 if product_number==2
+	replace product_numberG =3 if product_number==3
+	replace product_numberG =4 if product_number>3
+
+label define product_numberG   0 "0" 1 "1" 2 "2"	3 "3" 4 "4+"
+label values product_numberG product_numberG
+
+drop temp_*
+
+// create custom group
+gen demo_incomegroup =.
+replace demo_incomegroup =4 if demo_income ==13
+replace demo_incomegroup =1 if demo_income <=12
+replace demo_incomegroup =2 if demo_income <=7
+replace demo_incomegroup =3 if demo_income <=6
+replace demo_incomegroup =4 if demo_income <=4
+
+label define incomegroup  1 "Less than $30,000" 2 "$30,000 - $74,999" 3 "$75,000 - $99,999 - $99,999" 4 "$100,000 or more"
+label values demo_incomegroup incomegroup
+
+
+gen demo_county = .
+replace demo_county =1 if californiacounty =="Alameda"
+replace demo_county =2 if californiacounty =="Contra Costa"
+replace demo_county =3 if californiacounty =="Outside CA"
+replace demo_county =4 if californiacounty =="San Mateo"
+replace demo_county =5 if californiacounty =="Santa Clara"
+replace demo_county =6 if californiacounty =="Sacramento"
+replace demo_county =7 if californiacounty =="San Francisco"
+replace demo_county =8 if demo_county==.
+
+label define county  1 "Alameda" 2 "Contra Costa" 3 "Outside CA" 4 "San Mateo" 5 "Santa Clara" 6 "Sacramento" 7 "San Francisco" 8 "Other"
+label values demo_county county
+
+
+
+//drop unnecessary fields
+drop city state zip fipscode countycensusareaincludescounites californiacounty ethnicityifromdemographicappend ethnicityiifromdemographicappend mbrage ZIPCODE MSAName _merge 
+
+//order variables alphabetically
+order _all, alpha
+order UniqueIDResp
+
+//Reports to output
+//Run report for null values after predefined criterias are dropped
+		mdesc
+
+save "Outputs\Step3.dta",replace

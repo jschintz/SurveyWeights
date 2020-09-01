@@ -1,0 +1,30 @@
+-------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jschintz\Dropbox (CFSI)\Programs\
+> Inform\CFHS Typing Tool\Typing Tool Standardization\E
+> xample (Patelco)\Scripts and Outputs\Outputs\Log_Step
+> 1.txt
+  log type:  text
+ opened on:   6 Jan 2017, 13:33:11
+
+.         
+. //      Survey Instrument Inputs
+.         //      Import Method of Survey Data File
+.                 local Survey_DataFile import excel "I
+> nput Data Files\Patelco Survey Data, 2016.11.29.xlsx"
+> , sheet("Sheet1") firstrow
+
+. 
+end of do-file
+
+. do "C:\Users\jschintz\AppData\Local\Temp\STD0e000000.
+> tmp"
+
+.                 local Survey_DataFile import excel "I
+> nput Data Files\Patelco Survey Data, 2016.11.29.xlsx"
+> , sheet("Sheet1") firstrow
+
+. 
+end of do-file
+
+. exit, clear

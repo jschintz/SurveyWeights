@@ -1,0 +1,420 @@
+----------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jschintz\Dropbox (CFSI)\Programs\Inform\CFHS Typing Tool\Typing Tool Standardization\Example (Patelco)
+> \Scripts and Outputs\Outputs\Log_Step4.txt
+  log type:  text
+ opened on:   3 Jan 2017, 16:02:38
+
+. 
+.         //define which variables need to be used from benchmark file when constructing weights.  Currently only two "group
+> s" have been defined, product and demographics
+.         //local variables demo_age demo_county demo_gender demo_incomegroup demo_marital product_CC product_autoloan produ
+> ct_checking product_consumerloan product_indirect product_loggedin product_mortgage product_nonmortgageCCLoan product_reti
+> rement product_savings
+.         local product product_CC product_checking product_indirect product_loggedin product_mortgage product_nonmortgageCC
+> Loan product_retirement product_savings
+
+.         local demographics demo_age demo_county demo_gender demo_incomegroup
+
+.         local variables `product' `demographics' 
+
+.         
+.         //Define survey weight to be used for final results to client, at the end of analysis of survey weights
+.         local finalweight rakedwgt4
+
+.         //refernce ipfraking document for guidance on construction of survey weights.  http://www.stata-journal.com/sjpdf.
+> html?articlenum=st0323
+.         
+. //---------------------------------------------------------------------------   
+. //Step 2  Create custom weights
+. 
+. //Import benchmark file
+. local benchmarkdataload "use "Outputs\Step3.dta", clear"
+
+. //Import Survey file
+. local surveydataload "use "Outputs\Step2.dta", clear"
+
+. 
+. 
+. 
+. foreach qvar in `variables'{
+  2.                                                 `benchmarkdataload'
+  3.                                                 collapse (count) UniqueIDResp , by(`qvar')
+  4.                                                 mkmat `qvar', matrix(col_`qvar')
+  5.                                                 matrix col_`qvar' = (col_`qvar'')
+  6.                                                 mkmat UniqueIDResp, matrix(num_`qvar')
+  7.                                                 matrix num_`qvar' = ( num_`qvar'')
+  8.                                                 
+.                                                 
+.                                                 matrix `qvar' = num_`qvar'
+  9.                                                 //replace column names with the row number of collapsed data set
+.                                                 numlist "1/`r(N)'"
+ 10.                                                 mat colnames `qvar' = `r(numlist)'
+ 11.                                                 
+.                                                 matrix coleq `qvar' = _one
+ 12.                                                 matrix rownames `qvar' = `qvar'
+ 13.                                                 }
+
+. 
+. clear
+
+. 
+. 
+. //Load Survey data
+. `surveydataload'
+
+. //Merge Benchmark to the survey data
+. merge 1:1 UniqueIDResp using "Outputs\Step3.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                       280,331
+        from master                         0  (_merge==1)
+        from using                    280,331  (_merge==2)
+
+    matched                             4,540  (_merge==3)
+    -----------------------------------------
+
+. 
+. //Only keep survey records that matched to benchmark file
+. keep if _merge==3
+(280,331 observations deleted)
+
+. 
+. 
+. //Rake!
+.                 generate finalwgt = 1
+
+.                 generate byte _one = 1
+
+.                 //Rake all variables no trimming
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`product' `demographics') generate(rakedwgt1)              
+
+ Iteration 1, max rel difference of raked weights = 342.19683
+ Iteration 2, max rel difference of raked weights = .72104252
+ Iteration 3, max rel difference of raked weights = .10297359
+ Iteration 4, max rel difference of raked weights = .02006708
+ Iteration 5, max rel difference of raked weights = .00720089
+ Iteration 6, max rel difference of raked weights = .00232778
+ Iteration 7, max rel difference of raked weights = .00074426
+ Iteration 8, max rel difference of raked weights = .00020955
+ Iteration 9, max rel difference of raked weights = .00004969
+ Iteration 10, max rel difference of raked weights = 9.125e-06
+ Iteration 11, max rel difference of raked weights = 1.693e-06
+ Iteration 12, max rel difference of raked weights = 6.201e-07
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   62.747     38.437     9.009      314.88   .6126
+Adjust factor |  62.7469               9.0090    314.8840
+
+.                 //Rake product variables no trimming
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`product') generate(rakedwgt2)     
+
+ Iteration 1, max rel difference of raked weights = 198.4252
+ Iteration 2, max rel difference of raked weights = .6280645
+ Iteration 3, max rel difference of raked weights = .03748425
+ Iteration 4, max rel difference of raked weights = .01749734
+ Iteration 5, max rel difference of raked weights = .00569644
+ Iteration 6, max rel difference of raked weights = .00177638
+ Iteration 7, max rel difference of raked weights = .00049619
+ Iteration 8, max rel difference of raked weights = .0001229
+ Iteration 9, max rel difference of raked weights = .00002838
+ Iteration 10, max rel difference of raked weights = 6.249e-06
+ Iteration 11, max rel difference of raked weights = 1.325e-06
+ Iteration 12, max rel difference of raked weights = 2.717e-07
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   62.747     34.344    12.963      155.21   .5473
+Adjust factor |  62.7469              12.9627    155.2116
+
+.                 //Rake demographic variables no trimming
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`demographics') generate(rakedwgt3)        
+
+ Iteration 1, max rel difference of raked weights = 174.85129
+ Iteration 2, max rel difference of raked weights = .04035403
+ Iteration 3, max rel difference of raked weights = .00588725
+ Iteration 4, max rel difference of raked weights = .0006032
+ Iteration 5, max rel difference of raked weights = .00003841
+ Iteration 6, max rel difference of raked weights = 1.474e-06
+ Iteration 7, max rel difference of raked weights = 1.531e-07
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   62.747     15.865    43.822      177.85   .2528
+Adjust factor |  62.7469              43.8215    177.8482
+
+.                 //Rake all variables trimmed
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`product' `demographics') trimlorel(1) trimhirel(70) generate
+> (rakedwgt4)           
+
+ Iteration 1, max rel difference of raked weights = 69
+ Iteration 2, max rel difference of raked weights = .53726662
+ Iteration 3, max rel difference of raked weights = .38674488
+ Iteration 4, max rel difference of raked weights = .34444484
+ Iteration 5, max rel difference of raked weights = .31978739
+ Iteration 6, max rel difference of raked weights = .27864273
+ Iteration 7, max rel difference of raked weights = .2510702
+ Iteration 8, max rel difference of raked weights = .23973937
+ Iteration 9, max rel difference of raked weights = .22145198
+ Iteration 10, max rel difference of raked weights = .20304093
+ Iteration 11, max rel difference of raked weights = .18706449
+ Iteration 12, max rel difference of raked weights = .17062234
+ Iteration 13, max rel difference of raked weights = .16739047
+ Iteration 14, max rel difference of raked weights = .15847516
+ Iteration 15, max rel difference of raked weights = .14719569
+ Iteration 16, max rel difference of raked weights = .14523201
+ Iteration 17, max rel difference of raked weights = .13172975
+ Iteration 18, max rel difference of raked weights = .12700572
+ Iteration 19, max rel difference of raked weights = .12091092
+ Iteration 20, max rel difference of raked weights = .11956103
+ Iteration 21, max rel difference of raked weights = .1154231
+ Iteration 22, max rel difference of raked weights = .10983272
+ Iteration 23, max rel difference of raked weights = .104602
+ Iteration 24, max rel difference of raked weights = .10413496
+ Iteration 25, max rel difference of raked weights = .10016573
+ Iteration 26, max rel difference of raked weights = .09728854
+ Iteration 27, max rel difference of raked weights = .09397363
+ Iteration 28, max rel difference of raked weights = .08816952
+ Iteration 29, max rel difference of raked weights = .08747586
+ Iteration 30, max rel difference of raked weights = .08728978
+ Iteration 31, max rel difference of raked weights = .08448824
+ Iteration 32, max rel difference of raked weights = .08302725
+ Iteration 33, max rel difference of raked weights = .08012076
+ Iteration 34, max rel difference of raked weights = .07871813
+ Iteration 35, max rel difference of raked weights = .07808321
+ Iteration 36, max rel difference of raked weights = .07511015
+ Iteration 37, max rel difference of raked weights = .07457081
+ Iteration 38, max rel difference of raked weights = .07085111
+ Iteration 39, max rel difference of raked weights = .0691684
+ Iteration 40, max rel difference of raked weights = .06916098
+ Iteration 41, max rel difference of raked weights = .06711413
+ Iteration 42, max rel difference of raked weights = .06553338
+ Iteration 43, max rel difference of raked weights = .06561065
+Warning: raking procedure appears diverging
+Warning: raking procedure did not converge; check the rakedwgt4 variable
+Warning: the controls product_CC did not match
+Warning: the controls product_checking did not match
+Warning: the controls product_indirect did not match
+Warning: the controls product_loggedin did not match
+Warning: the controls product_mortgage did not match
+Warning: the controls product_nonmortgageCCLoan did not match
+Warning: the controls product_retirement did not match
+Warning: the controls product_savings did not match
+Warning: the controls demo_age did not match
+Warning: the controls demo_county did not match
+Warning: the controls demo_gender did not match
+Warning: the controls demo_incomegroup did not match
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   50.575     29.123         1          70   .5758
+Adjust factor |  50.5751               1.0000     70.0000
+
+.                 //Rake product variables trimmed
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`product') trimloabs(1) trimhiabs(70) generate(rakedwgt5)  
+
+ Iteration 1, max rel difference of raked weights = 69
+ Iteration 2, max rel difference of raked weights = .37180224
+ Iteration 3, max rel difference of raked weights = .24525115
+ Iteration 4, max rel difference of raked weights = .20450032
+ Iteration 5, max rel difference of raked weights = .19004101
+ Iteration 6, max rel difference of raked weights = .17215824
+ Iteration 7, max rel difference of raked weights = .16248731
+ Iteration 8, max rel difference of raked weights = .15846092
+ Iteration 9, max rel difference of raked weights = .15612766
+ Iteration 10, max rel difference of raked weights = .15291484
+ Iteration 11, max rel difference of raked weights = .14758641
+ Iteration 12, max rel difference of raked weights = .14121864
+ Iteration 13, max rel difference of raked weights = .13693715
+ Iteration 14, max rel difference of raked weights = .11838223
+ Iteration 15, max rel difference of raked weights = .11627123
+ Iteration 16, max rel difference of raked weights = .11466617
+ Iteration 17, max rel difference of raked weights = .10046977
+ Iteration 18, max rel difference of raked weights = .09322043
+ Iteration 19, max rel difference of raked weights = .09295111
+ Iteration 20, max rel difference of raked weights = .09171407
+ Iteration 21, max rel difference of raked weights = .09071075
+ Iteration 22, max rel difference of raked weights = .09018139
+ Iteration 23, max rel difference of raked weights = .08963521
+ Iteration 24, max rel difference of raked weights = .08885551
+ Iteration 25, max rel difference of raked weights = .08006329
+ Iteration 26, max rel difference of raked weights = .07860051
+ Iteration 27, max rel difference of raked weights = .07459475
+ Iteration 28, max rel difference of raked weights = .07480353
+Warning: raking procedure appears diverging
+Warning: raking procedure did not converge; check the rakedwgt5 variable
+Warning: the controls product_CC did not match
+Warning: the controls product_checking did not match
+Warning: the controls product_indirect did not match
+Warning: the controls product_loggedin did not match
+Warning: the controls product_mortgage did not match
+Warning: the controls product_nonmortgageCCLoan did not match
+Warning: the controls product_retirement did not match
+Warning: the controls product_savings did not match
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   51.755     27.265         1          70   .5268
+Adjust factor |  51.7548               1.0000     70.0000
+
+.                 //Rake demographic variables trimmed
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`demographics') trimloabs(1) trimhiabs(70) generate(rakedwgt6
+> )                     
+
+ Iteration 1, max rel difference of raked weights = 69
+ Iteration 2, max rel difference of raked weights = .10516443
+ Iteration 3, max rel difference of raked weights = .0604737
+ Iteration 4, max rel difference of raked weights = .05308687
+ Iteration 5, max rel difference of raked weights = .05253641
+ Iteration 6, max rel difference of raked weights = .0151262
+ Iteration 7, max rel difference of raked weights = .00810307
+ Iteration 8, max rel difference of raked weights = .00680217
+ Iteration 9, max rel difference of raked weights = .0056157
+ Iteration 10, max rel difference of raked weights = .00463123
+ Iteration 11, max rel difference of raked weights = .00380653
+ Iteration 12, max rel difference of raked weights = .00306919
+ Iteration 13, max rel difference of raked weights = .00248341
+ Iteration 14, max rel difference of raked weights = .0020257
+ Iteration 15, max rel difference of raked weights = .00166059
+ Iteration 16, max rel difference of raked weights = .00135616
+ Iteration 17, max rel difference of raked weights = .00110859
+ Iteration 18, max rel difference of raked weights = .00090883
+ Iteration 19, max rel difference of raked weights = .00074596
+ Iteration 20, max rel difference of raked weights = .00061288
+ Iteration 21, max rel difference of raked weights = .00050383
+ Iteration 22, max rel difference of raked weights = .00041433
+ Iteration 23, max rel difference of raked weights = .00034082
+ Iteration 24, max rel difference of raked weights = .0002804
+ Iteration 25, max rel difference of raked weights = .00023074
+ Iteration 26, max rel difference of raked weights = .00018989
+ Iteration 27, max rel difference of raked weights = .0001563
+ Iteration 28, max rel difference of raked weights = .00012867
+ Iteration 29, max rel difference of raked weights = .00010593
+ Iteration 30, max rel difference of raked weights = .00008721
+ Iteration 31, max rel difference of raked weights = .00007181
+ Iteration 32, max rel difference of raked weights = .00005913
+ Iteration 33, max rel difference of raked weights = .0000487
+ Iteration 34, max rel difference of raked weights = .0000401
+ Iteration 35, max rel difference of raked weights = .00003303
+ Iteration 36, max rel difference of raked weights = .0000272
+ Iteration 37, max rel difference of raked weights = .00002241
+ Iteration 38, max rel difference of raked weights = .00001846
+ Iteration 39, max rel difference of raked weights = .0000152
+ Iteration 40, max rel difference of raked weights = .00001252
+ Iteration 41, max rel difference of raked weights = .00001031
+ Iteration 42, max rel difference of raked weights = 8.497e-06
+ Iteration 43, max rel difference of raked weights = 6.999e-06
+ Iteration 44, max rel difference of raked weights = 5.766e-06
+ Iteration 45, max rel difference of raked weights = 4.750e-06
+ Iteration 46, max rel difference of raked weights = 3.913e-06
+ Iteration 47, max rel difference of raked weights = 3.224e-06
+ Iteration 48, max rel difference of raked weights = 2.656e-06
+ Iteration 49, max rel difference of raked weights = 2.188e-06
+ Iteration 50, max rel difference of raked weights = 1.802e-06
+ Iteration 51, max rel difference of raked weights = 1.485e-06
+ Iteration 52, max rel difference of raked weights = 1.223e-06
+ Iteration 53, max rel difference of raked weights = 1.008e-06
+ Iteration 54, max rel difference of raked weights = 8.302e-07
+Warning: the controls demo_age did not match
+Warning: the controls demo_county did not match
+Warning: the controls demo_gender did not match
+Warning: the controls demo_incomegroup did not match
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   59.877     9.2998    39.682          70   .1553
+Adjust factor |  59.8771              39.6816     70.0000
+
+.                 //Rake all variables trimmed halfway
+.                 ipfraking [pw=finalwgt], iterate(300) ctotal(`demographics') trimloabs(1) trimhiabs(150) generate(rakedwgt
+> 7)
+
+ Iteration 1, max rel difference of raked weights = 149
+ Iteration 2, max rel difference of raked weights = .04837409
+ Iteration 3, max rel difference of raked weights = .00629708
+ Iteration 4, max rel difference of raked weights = .00073989
+ Iteration 5, max rel difference of raked weights = .00005824
+ Iteration 6, max rel difference of raked weights = 2.976e-06
+ Iteration 7, max rel difference of raked weights = 2.356e-07
+
+   Summary of the weight changes
+
+              |    Mean    Std. dev.    Min        Max       CV
+--------------+-------------------------------------------------- 
+Orig weights  |        1          0         1           1       0
+Raked weights |   62.747     15.833    43.781         150   .2523
+Adjust factor |  62.7469              43.7808    150.0000
+
+.                 
+.                 egen sub_rakedwgt1  = total(rakedwgt1)
+
+.                 egen sub_rakedwgt2  = total(rakedwgt2)
+
+.                 egen sub_rakedwgt3  = total(rakedwgt3)
+
+.                 egen sub_rakedwgt4  = total(rakedwgt4)
+
+.                 egen sub_rakedwgt5  = total(rakedwgt5)
+
+.                 egen sub_rakedwgt6  = total(rakedwgt6)
+
+.                 egen sub_rakedwgt7  = total(rakedwgt7)
+
+.                 egen sub_finalwgt       = total(finalwgt)
+
+.         
+.                 replace rakedwgt1=rakedwgt1/sub_rakedwgt1*sub_finalwgt  
+(4,540 real changes made)
+
+.                 replace rakedwgt2=rakedwgt2/sub_rakedwgt2*sub_finalwgt  
+(4,540 real changes made)
+
+.                 replace rakedwgt3=rakedwgt3/sub_rakedwgt3*sub_finalwgt  
+(4,540 real changes made)
+
+.                 replace rakedwgt4=rakedwgt4/sub_rakedwgt4*sub_finalwgt  
+(4,540 real changes made)
+
+.                 replace rakedwgt5=rakedwgt5/sub_rakedwgt5*sub_finalwgt  
+(4,540 real changes made)
+
+.                 replace rakedwgt6=rakedwgt6/sub_rakedwgt6*sub_finalwgt  
+(4,540 real changes made)
+
+.                 replace rakedwgt7=rakedwgt7/sub_rakedwgt7*sub_finalwgt  
+(4,540 real changes made)
+
+.                 drop sub_*
+
+. 
+. //Create Final outputs
+. gen TT_Survey_Weight=`finalweight'
+
+. save "Outputs\Step4.dta", replace
+file Outputs\Step4.dta saved
+
+. 
+. 
+end of do-file
+
+. exit, clear
